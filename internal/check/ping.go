@@ -171,5 +171,10 @@ func (c *PingCheck) runErrorResult(target string, start time.Time, err error) do
 			Err(fmt.Errorf("%s: %w", hint, err)).
 			Build()
 	}
-	// ...
+	return domain.NewResultBuilder(domain.Ping, target).
+		Status(domain.Fail).
+		Timestamp(start).
+		Err(err).
+		Reason(ClassifyError(err)).
+		Build()
 }

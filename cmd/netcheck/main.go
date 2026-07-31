@@ -26,6 +26,11 @@ func run() int {
 		"google.com:80",
 		"127.0.0.1:9999",
 	}
+	pingTargets := []string{
+		"1.1.1.1",
+		"8.8.8.8",
+		"192.0.2.1",
+	}
 
 	resolvers := []check.ResolverSpec{
 		{Name: "System", Address: ""},
@@ -65,6 +70,15 @@ func run() int {
 	checks := []check.Check{
 		check.NewTCPCheck(tcpTargets, timeout, dialer),
 		check.NewDNSCheck(resolvers, queries, timeout),
+		check.NewPingCheck(
+			pingTargets,
+			10,
+			200*time.Millisecond,
+			5*time.Second,
+			1.0,
+			50.0,
+			true,
+		),
 	}
 
 	reporter := report.NewConsoleReport(os.Stdout)
