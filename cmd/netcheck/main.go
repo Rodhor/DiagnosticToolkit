@@ -90,7 +90,7 @@ func run() int {
 			5*time.Second,
 			1.0,
 			50.0,
-			false,
+			true,
 		),
 	}
 
