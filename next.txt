@@ -1,0 +1,60 @@
+Adding checks next is the right call, and not just because they're the product — the second check is what tells you whether Result and Check are actually shaped correctly. One implementation always fits its own interface.
+
+Order: DNS, then ping, then the platform provider
+
+DNS next because it's pure stdlib, needs no privileges, has no external dependency, and pressures the domain model in exactly the ways you want to discover early. Ping third because it brings your first external dependency and the privilege problem. Platform provider fourth, since it isn't really a check at all and deserves its own thinking.
+
+The DNS check
+What makes it worth building properly
+
+A naive DNS check resolves a name and reports success. That's nearly worthless diagnostically. The two things that make it earn its place:
+
+Resolve against multiple resolvers. Test the machine's configured resolver and a known-good public one like 1.1.1.1. If the internal one fails and the public one works, the customer's DNS server is broken. If both fail, it's connectivity. If the internal one works and the public one doesn't, outbound port 53 is filtered. Three completely different findings, and you can't distinguish them with one resolver.
+
+To target a specific server, build a net.Resolver with PreferGo: true and a custom Dial func that ignores the address it's handed and dials your chosen server on port 53. That's the standard trick — the Dial field exists precisely for this. Caveat to note for later: PreferGo bypasses the system resolver, so on Windows and macOS it won't see the OS cache or platform-specific search-domain behaviour. That's usually what you want for diagnostics, but it means the result answers "can this server resolve it" rather than "what would an application on this machine get." Consider testing both ways eventually.
+
+Validate the answer, don't just check for one. Let each target carry optional expected addresses. If the colleague knows intranet.kunde.local should be 10.0.0.5, then getting a different answer is a Fail even though resolution technically succeeded. This catches split-horizon DNS misconfiguration, stale records, and ISP NXDOMAIN hijacking — a resolver returning a search-page IP for a name that shouldn't exist. Those are real faults that a "did it resolve" check reports as green.
+
+Error classification is where the diagnostic value lives
+
+*net.DNSError gives you IsNotFound, IsTimeout, and IsTemporary. Map them to distinct reasons, because they mean entirely different things:
+
+NXDOMAIN (IsNotFound) — the server answered, and the name doesn't exist. That's a typo or a missing record. The DNS server itself is healthy.
+Timeout — the server never answered. It's down, unreachable, or port 53 is filtered.
+SERVFAIL / temporary — the server answered that it couldn't do the job. Often an upstream forwarder problem.
+
+Confusing NXDOMAIN with timeout sends you to debug the wrong box, which is precisely the mistake this tool exists to prevent.
+
+Where it will press on your model
+
+Target uniqueness. Running one name against three resolvers produces three results with identical Target values, and any report grouping by target collapses them. Decide now: Target should be the unique human-readable identity of an observation, so make it something like intranet.local @ 10.0.0.1, and put the name and resolver separately in Detail for machine consumption. Getting this wrong surfaces as a confusing report much later.
+
+Latency semantics. Once DNS has its own check with its own timing, come back to the TCP check and either document that its targets should be literal IPs, or resolve explicitly first and record resolution time separately in Detail. You now have resolver code to reuse for the latter.
+
+Refactors this check will force — do them as part of it
+
+Three pieces of tcp.go stop being TCP-specific the moment a second check exists:
+
+classifyError — move it to its own file in the check package and extend it with the DNS cases. Both checks call the same function; the reason constants are already shared.
+newResult — it's currently a method on *TCPCheck with CheckType: TCP hardcoded. Make it a package-level function taking the check type. Otherwise you copy it per check and eventually one of them forgets a field.
+warnThreshold — this is the moment I flagged earlier. DNS wants the same logic, with a different value. Rather than a second constructor parameter and a second copy of the comparison, extract it: a map[CheckType]time.Duration and a pure ApplyThresholds([]Result, thresholds) []Result that promotes Pass to Warn. Checks go back to reporting only what they observed, all interpretation lives in one testable function, and the third check gets thresholds for free.
+
+That third one is the highest-value refactor in the project right now. Do it before you have three checks rather than after.
+
+The ping check (third)
+
+Briefer, since it's further out, but two things shape it:
+
+Privileges. Use github.com/prometheus-community/pro-bing with SetPrivileged(false). Windows works unprivileged via IcmpSendEcho; macOS allows unprivileged ICMP datagram sockets; Linux needs net.ipv4.ping_group_range to cover the user's GID, which desktops usually set and servers often don't. Detect the socket-permission failure specifically and emit a result explaining it rather than a raw error — otherwise your colleague sees a cryptic message and assumes the tool is broken.
+
+A ping result is an aggregate, not a measurement. Ten packets give you loss percentage, min/avg/max, and jitter. Your Result has a single Latency field, so avg goes there and the rest goes in Detail. That's workable, but it's the second signal (after DNS resolvers) that Result is a summary of an observation rather than a single data point. Worth being conscious of — packet loss is arguably the most diagnostically valuable number the whole tool produces, and it deserves a first-class place in the report even if it lives in the Detail bag.
+
+Also, this is your first external dependency. Vendor it or at least be deliberate, given the binary ships to sites where you may not want surprises.
+
+The platform provider (fourth) — and a warning
+
+ipconfig-style information isn't a check. It has no pass/fail; it's context. Forcing it into the Check interface means a result that always passes with everything stuffed in Detail, which the renderer then has to special-case anyway.
+
+Two better options, decide when you get there: treat it as a separate "environment" section rendered at the top of the report, or derive genuine checks from it — "gateway is reachable," "DHCP lease expires in more than an hour," "resolver matches expected." I lean toward the latter, because it turns inventory data into findings.
+
+The real payoff, and the reason it's worth doing before the tool ships: once the platform layer can report the gateway and the configured DNS servers, your check targets stop being hardcoded. The tool discovers the gateway and pings it, discovers the resolvers and tests them. That's the difference between a tool your colleague configures per site and one he just runs.

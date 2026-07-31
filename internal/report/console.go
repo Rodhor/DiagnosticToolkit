@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/rodhor/DiagnosticToolset/internal/check"
+	"github.com/rodhor/DiagnosticToolset/internal/domain"
 )
 
 var (
@@ -22,24 +22,24 @@ func NewConsoleReport(writer io.Writer) *ConsoleReport {
 	}
 }
 
-func (cr *ConsoleReport) WriteResult(result check.Result) error {
+func (cr *ConsoleReport) WriteResult(result domain.CheckResult) error {
 	var statusSymbol string
 	switch result.Status {
-	case check.Pass:
+	case domain.Pass:
 		statusSymbol = "[PASS]"
-	case check.Fail:
+	case domain.Fail:
 		statusSymbol = "[FAIL]"
-	case check.Warn:
+	case domain.Warn:
 		statusSymbol = "[WARN]"
 	default:
 		statusSymbol = "[UNKNOWN]"
 	}
 
 	line := fmt.Sprintf("%s [%s] %s", statusSymbol, result.CheckType, result.Target)
-	if result.Status == check.Pass || result.Status == check.Warn {
+	if result.Status == domain.Pass || result.Status == domain.Warn {
 		line += fmt.Sprintf(" - %v", result.Latency.Round(time.Microsecond))
 	}
-	if reason, ok := result.Detail[check.KeyReason]; ok {
+	if reason, ok := result.Detail[domain.KeyReason]; ok {
 		line += fmt.Sprintf(" [%v]", reason)
 	}
 	if result.Err != "" {

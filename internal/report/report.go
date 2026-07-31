@@ -1,13 +1,13 @@
 package report
 
 import (
-	"github.com/rodhor/DiagnosticToolset/internal/check"
+	"github.com/rodhor/DiagnosticToolset/internal/domain"
 )
 
 type BatchReporter interface {
-	WriteReport(results []check.Result) error
+	WriteReport(results []domain.CheckResult) error
 }
 
 type StreamReporter interface {
-	WriteResult(res check.Result) error
+	WriteResult(res domain.CheckResult) error
 }
