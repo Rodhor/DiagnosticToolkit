@@ -3,6 +3,7 @@ package report
 import (
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/rodhor/DiagnosticToolset/internal/domain"
@@ -35,16 +36,22 @@ func (cr *ConsoleReport) WriteResult(result domain.CheckResult) error {
 		statusSymbol = "[UNKNOWN]"
 	}
 
-	line := fmt.Sprintf("%s [%s] %s", statusSymbol, result.CheckType, result.Target)
+	var line strings.Builder
+	fmt.Fprintf(&line, "%s [%s] %s", statusSymbol, result.CheckType, result.Target)
 	if result.Status == domain.Pass || result.Status == domain.Warn {
-		line += fmt.Sprintf(" - %v", result.Latency.Round(time.Microsecond))
+		fmt.Fprintf(&line, " - %v", result.Latency.Round(time.Microsecond))
 	}
-	if reason, ok := result.Detail[domain.KeyReason]; ok {
-		line += fmt.Sprintf(" [%v]", reason)
+	if result.Reason != "" {
+		fmt.Fprintf(&line, " [%s]", result.Reason)
+	}
+	for _, m := range result.Metrics {
+		if m.Primary {
+			fmt.Fprintf(&line, " %s=%s", m.Label, m.Display)
+		}
 	}
 	if result.Err != "" {
-		line += fmt.Sprintf(" - %s", result.Err)
+		fmt.Fprintf(&line, " - %s", result.Err)
 	}
-	_, err := fmt.Fprintln(cr.writer, line)
+	_, err := fmt.Fprintln(cr.writer, line.String())
 	return err
 }

@@ -1,6 +1,8 @@
 package domain
 
-import "time"
+import (
+	"time"
+)
 
 type ResultStatus string
 
@@ -16,35 +18,62 @@ type CheckResult struct {
 	Target    string
 	Status    ResultStatus
 	Latency   time.Duration
+	Reason    string
 	Err       string
 	Timestamp time.Time
-	Detail    map[string]any
+	Metrics   []Metric
 }
 
-func NewCheckResult(
-	checkType CheckType,
-	target string,
-	status ResultStatus,
-	latency time.Duration,
-	timestamp time.Time,
-	err error,
-	detail map[string]any,
-) CheckResult {
-	var errStr string
-	if err != nil {
-		errStr = err.Error()
-	}
+type CheckResultBuilder struct {
+	result CheckResult
+}
 
-	if detail == nil {
-		detail = make(map[string]any)
+func NewResultBuilder(checkType CheckType, target string) *CheckResultBuilder {
+	return &CheckResultBuilder{
+		result: CheckResult{
+			CheckType: checkType,
+			Target:    target,
+			Status:    Unknown,
+			Timestamp: time.Now(),
+			Metrics:   []Metric{},
+		},
 	}
-	return CheckResult{
-		CheckType: checkType,
-		Target:    target,
-		Status:    status,
-		Latency:   latency,
-		Err:       errStr,
-		Timestamp: timestamp,
-		Detail:    detail,
+}
+
+func (b *CheckResultBuilder) Status(s ResultStatus) *CheckResultBuilder {
+	b.result.Status = s
+	return b
+}
+
+func (b *CheckResultBuilder) Latency(d time.Duration) *CheckResultBuilder {
+	b.result.Latency = d
+	return b
+}
+func (b *CheckResultBuilder) Reason(r string) *CheckResultBuilder {
+	b.result.Reason = r
+	return b
+}
+func (b *CheckResultBuilder) Err(err error) *CheckResultBuilder {
+	if err != nil {
+		b.result.Err = err.Error()
 	}
+	return b
+}
+func (b *CheckResultBuilder) Metrics(m []Metric) *CheckResultBuilder {
+	if m != nil {
+		b.result.Metrics = m
+	}
+	return b
+}
+func (b *CheckResultBuilder) Metric(m Metric) *CheckResultBuilder {
+	b.result.Metrics = append(b.result.Metrics, m)
+	return b
+}
+
+func (b *CheckResultBuilder) Timestamp(t time.Time) *CheckResultBuilder {
+	b.result.Timestamp = t
+	return b
+}
+func (b *CheckResultBuilder) Build() CheckResult {
+	return b.result
 }

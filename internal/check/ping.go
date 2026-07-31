@@ -74,10 +74,13 @@ func (c *PingCheck) pingTarget(ctx context.Context, target string) (domain.Check
 
 	pinger, err := probing.NewPinger(target)
 	if err != nil {
-		detail := map[string]any{domain.KeyReason: domain.ReasonResolveFailure}
-		return domain.NewCheckResult(
-			domain.Ping, target, domain.Fail, 0, start, err, detail,
-		), nil
+		return domain.NewResultBuilder(
+			domain.Ping, target).
+			Status(domain.Fail).
+			Timestamp(start).
+			Reason(domain.ReasonResolveFailure).
+			Err(err).
+			Build(), nil
 	}
 
 	pinger.Count = c.count
@@ -96,61 +99,77 @@ func (c *PingCheck) pingTarget(ctx context.Context, target string) (domain.Check
 }
 
 func (c *PingCheck) statsResult(target string, start time.Time, stats *probing.Statistics) domain.CheckResult {
-	detail := map[string]any{
-		domain.KeyPacketsSent:     stats.PacketsSent,
-		domain.KeyPacketsReceived: stats.PacketsRecv,
-		domain.KeyPacketLoss:      stats.PacketLoss,
+	metrics := []domain.Metric{
+		domain.IntegerMetric(domain.KeyPacketsSent, "Packets Sent", stats.PacketsSent, false),
+		domain.IntegerMetric(domain.KeyPacketsReceived, "Packets Received", stats.PacketsRecv, false),
+		domain.PercentMetric(domain.KeyPacketLoss, "Packets Lost", stats.PacketLoss, true),
 	}
+
 	if stats.IPAddr != nil {
-		detail[domain.KeyResolvedIP] = stats.IPAddr.String()
+		metrics = append(metrics, domain.TextMetric(
+			domain.KeyResolvedIP, "Resolved IP", stats.IPAddr.String(), false))
 	}
 
 	if stats.PacketsRecv == 0 {
-		detail[domain.KeyReason] = domain.ReasonTotalLoss
-		return domain.NewCheckResult(
-			domain.Ping, target, domain.Fail, 0, start, fmt.Errorf("no reply to %d packets", stats.PacketsSent),
-			detail,
+		return domain.NewResultBuilder(domain.Ping, target).
+			Status(domain.Fail).
+			Timestamp(start).
+			Reason(domain.ReasonTotalLoss).
+			Err(fmt.Errorf("no reply to %d packets", stats.PacketsSent)).
+			Metrics(metrics).
+			Build()
+	}
+
+	metrics = append(metrics,
+		domain.TextMetric(domain.KeyMinRTT, "Min RTT", stats.MinRtt.String(), false),
+		domain.TextMetric(domain.KeyMaxRTT, "Max RTT", stats.MaxRtt.String(), false),
+		domain.TextMetric(domain.KeyAvgRTT, "Average RTT", stats.AvgRtt.String(), false),
+		domain.TextMetric(domain.KeyJitter, "Jitter", stats.StdDevRtt.String(), false),
+	)
+	status := domain.Pass
+	reason := ""
+	switch {
+	case c.failLoss > 0 && stats.PacketLoss >= c.failLoss:
+		status = domain.Fail
+		reason = domain.ReasonPacketLoss
+		metrics = append(metrics,
+			domain.PercentMetric(domain.KeyLossThreshold, "Loss Threshold", c.failLoss, false),
+		)
+	case c.warnLoss > 0 && stats.PacketLoss >= c.warnLoss:
+		status = domain.Warn
+		reason = domain.ReasonPacketLoss
+		metrics = append(metrics,
+			domain.PercentMetric(domain.KeyLossThreshold, "Loss Threshold", c.warnLoss, false),
 		)
 	}
 
-	detail[domain.KeyMinRTT] = stats.MinRtt.String()
-	detail[domain.KeyMaxRTT] = stats.MaxRtt.String()
-	detail[domain.KeyAvgRTT] = stats.AvgRtt.String()
-	detail[domain.KeyJitter] = stats.StdDevRtt.String()
-
-	status := domain.Pass
-	switch {
-	case c.warnLoss > 0 && stats.PacketLoss >= c.warnLoss:
-		status = domain.Warn
-		detail[domain.KeyReason] = domain.ReasonPacketLoss
-		detail[domain.KeyLossThreshold] = c.warnLoss
-	case c.failLoss > 0 && stats.PacketLoss >= c.failLoss:
-		status = domain.Fail
-		detail[domain.KeyReason] = domain.ReasonPacketLoss
-		detail[domain.KeyLossThreshold] = c.failLoss
-	}
-
-	return domain.NewCheckResult(
-		domain.Ping, target, status, stats.AvgRtt, start, nil, detail,
-	)
+	return domain.NewResultBuilder(domain.Ping, target).
+		Status(status).
+		Reason(reason).
+		Latency(stats.AvgRtt).
+		Timestamp(start).
+		Metrics(metrics).
+		Build()
 
 }
 
 func (c *PingCheck) runErrorResult(target string, start time.Time, err error) domain.CheckResult {
-	detail := map[string]any{}
-
 	if isPermissionError(err) {
-		detail[domain.KeyReason] = domain.ReasonNoPermission
-		return domain.NewCheckResult(
-			domain.Ping, target, domain.Unknown, 0, start, fmt.Errorf("ICMP socket denied: %w "+
-				"Linux: Check `sysctl net.ipv4.ping_group_range`; "+
-				"or run privileged", err),
-			detail,
-		)
+		var hint string
+		if c.privileged {
+			hint = "raw ICMP socket denied — grant the capability with " +
+				"`sudo setcap cap_net_raw+ep <binary>`, or run unprivileged"
+		} else {
+			hint = "unprivileged ICMP denied — enable it with " +
+				"`sudo sysctl -w net.ipv4.ping_group_range=\"0 2147483647\"`, " +
+				"or run privileged"
+		}
+		return domain.NewResultBuilder(domain.Ping, target).
+			Status(domain.Unknown).
+			Timestamp(start).
+			Reason(domain.ReasonNoPermission).
+			Err(fmt.Errorf("%s: %w", hint, err)).
+			Build()
 	}
-
-	detail[domain.KeyReason] = ClassifyError(err)
-	return domain.NewCheckResult(
-		domain.Ping, target, domain.Fail, 0, start, err, detail,
-	)
+	// ...
 }

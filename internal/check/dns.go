@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/rodhor/DiagnosticToolset/internal/domain"
@@ -126,9 +127,9 @@ func (c *DNSCheck) checkQuery(
 		return domain.CheckResult{}, ctxErr
 	}
 
-	detail := map[string]any{
-		domain.KeyResolver:  resolver.name,
-		domain.KeyQueryName: query.Name,
+	metrics := []domain.Metric{
+		domain.TextMetric(domain.KeyResolver, "DNS Resolver", resolver.name, false),
+		domain.TextMetric(domain.KeyQueryName, "Domain Query", query.Name, false),
 	}
 
 	outcome := query.ExpectedOutcome
@@ -140,67 +141,80 @@ func (c *DNSCheck) checkQuery(
 		if err != nil {
 			reason := ClassifyError(err)
 			if reason == domain.ReasonNXDomain {
-				return domain.NewCheckResult(domain.DNS, targetLabel, domain.Pass, latency, start, nil, detail), nil
+				return domain.NewResultBuilder(domain.DNS, targetLabel).
+					Status(domain.Pass).
+					Latency(latency).
+					Timestamp(start).
+					Metrics(metrics).
+					Build(), nil
 			}
 
 			// Non-NXDOMAIN error (e.g. Timeout)
-			detail[domain.KeyReason] = reason
-			return domain.NewCheckResult(domain.DNS, targetLabel, domain.Fail, latency, start, err, detail), nil
+			return domain.NewResultBuilder(domain.DNS, targetLabel).
+				Status(domain.Fail).
+				Latency(latency).
+				Timestamp(start).
+				Reason(reason).
+				Metrics(metrics).
+				Err(err).
+				Build(), nil
 		}
 
 		slices.Sort(ips)
+		metrics = append(metrics,
+			domain.TextMetric(domain.KeyActualAddresses, "Resolved IP(s)", strings.Join(ips, ", "), false))
 
 		// Lookup succeeded on non-existent record -> Hijack detected
-		detail[domain.KeyReason] = domain.ReasonNXDomainHijacked
-		detail[domain.KeyActualAddresses] = ips
-		return domain.NewCheckResult(
-			domain.DNS,
-			targetLabel,
-			domain.Fail,
-			latency,
-			start,
-			fmt.Errorf("lookup succeeded for non-existent name (possible DNS hijack)"),
-			detail,
-		), nil
+		return domain.NewResultBuilder(domain.DNS, targetLabel).
+			Status(domain.Fail).
+			Latency(latency).
+			Timestamp(start).
+			Reason(domain.ReasonNXDomainHijacked).
+			Err(domain.ErrDNSHijack).
+			Metrics(metrics).
+			Build(), nil
 	}
 
 	if err != nil {
-		detail[domain.KeyReason] = ClassifyError(err)
-		return domain.NewCheckResult(domain.DNS, targetLabel, domain.Fail, latency, start, err, detail), nil
+		return domain.NewResultBuilder(domain.DNS, targetLabel).
+			Status(domain.Fail).
+			Latency(latency).
+			Timestamp(start).
+			Reason(ClassifyError(err)).
+			Err(err).
+			Metrics(metrics).
+			Build(), nil
 	}
 
 	slices.Sort(ips)
-	detail[domain.KeyActualAddresses] = ips
+	metrics = append(metrics,
+		domain.TextMetric(domain.KeyActualAddresses, "Resolved IP(s)", strings.Join(ips, ", "), false))
 
 	if len(query.ExpectedAddresses) > 0 {
 		sortedExpected := make([]string, len(query.ExpectedAddresses))
 		copy(sortedExpected, query.ExpectedAddresses)
 		slices.Sort(sortedExpected)
-		detail[domain.KeyExpectedAddresses] = sortedExpected
+		metrics = append(metrics, domain.TextMetric(
+			domain.KeyExpectedAddresses, "Expected IP(s)", strings.Join(sortedExpected, ", "), false))
 
 		if !containsAll(ips, sortedExpected) {
-			detail[domain.KeyReason] = domain.ReasonUnexpectedAnswer
-			return domain.NewCheckResult(
-				domain.DNS,
-				targetLabel,
-				domain.Fail,
-				latency,
-				start,
-				fmt.Errorf("expected addresses %v not found in answer %v", sortedExpected, ips),
-				detail,
-			), nil
+			return domain.NewResultBuilder(domain.DNS, targetLabel).
+				Status(domain.Fail).
+				Latency(latency).
+				Timestamp(start).
+				Reason(domain.ReasonUnexpectedAnswer).
+				Err(fmt.Errorf("expected addresses %v not found in answer %v", sortedExpected, ips)).
+				Metrics(metrics).
+				Build(), nil
 		}
 	}
 
-	return domain.NewCheckResult(
-		domain.DNS,
-		targetLabel,
-		domain.Pass,
-		latency,
-		start,
-		nil,
-		detail,
-	), nil
+	return domain.NewResultBuilder(domain.DNS, targetLabel).
+		Status(domain.Pass).
+		Latency(latency).
+		Timestamp(start).
+		Metrics(metrics).
+		Build(), nil
 }
 
 func containsAll(actual []string, expected []string) bool {

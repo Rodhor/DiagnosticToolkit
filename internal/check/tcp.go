@@ -36,8 +36,8 @@ func (c *TCPCheck) Run(ctx context.Context) []domain.CheckResult {
 		}
 
 		// Returns false if context is cancelled
-		res, ok := c.checkTarget(ctx, target)
-		if !ok {
+		res, err := c.checkTarget(ctx, target)
+		if err != nil {
 			break
 		}
 		results = append(results, res)
@@ -45,27 +45,32 @@ func (c *TCPCheck) Run(ctx context.Context) []domain.CheckResult {
 	return results
 }
 
-func (c *TCPCheck) checkTarget(ctx context.Context, target string) (domain.CheckResult, bool) {
+func (c *TCPCheck) checkTarget(ctx context.Context, target string) (domain.CheckResult, error) {
 	start := time.Now()
 	conn, err := c.dialer.DialContext(ctx, "tcp", target)
 	latency := time.Since(start)
 
 	if ctx.Err() != nil {
-		return domain.CheckResult{}, false
+		return domain.CheckResult{}, ctx.Err()
 	}
 
 	if err != nil {
-		return domain.NewCheckResult(domain.TCP, target, domain.Fail, latency, start, err, map[string]any{domain.KeyReason: ClassifyError(err)}), true
+		return domain.NewResultBuilder(domain.TCP, target).
+			Status(domain.Fail).
+			Latency(latency).
+			Timestamp(start).
+			Err(err).
+			Reason(ClassifyError(err)).
+			Build(), nil
 	}
 
 	remoteAddr := conn.RemoteAddr().String()
 	_ = conn.Close()
 
-	status := domain.Pass
-	detail := map[string]any{
-		domain.KeyRemoteAddr: remoteAddr,
-	}
-
-	return domain.NewCheckResult(domain.TCP, target, status, latency, start, nil, detail), true
-
+	return domain.NewResultBuilder(domain.TCP, target).
+		Status(domain.Pass).
+		Latency(latency).
+		Timestamp(start).
+		Metric(domain.TextMetric(domain.KeyRemoteAddr, "Remote Endpoint", remoteAddr, false)).
+		Build(), nil
 }

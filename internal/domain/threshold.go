@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"maps"
 	"slices"
 	"time"
 )
@@ -24,17 +23,14 @@ func ApplyThresholds(results []CheckResult, t Thresholds) []CheckResult {
 		threshold, hasThreshold := t[res.CheckType]
 		if r.Status == Pass && hasThreshold && threshold > 0 && r.Latency > threshold {
 			r.Status = Warn
+			r.Reason = ReasonHighLatency
 
-			newDetail := make(map[string]any, len(r.Detail)+2)
-			// Copy the existing detail and add the reason and threshold
-			maps.Copy(newDetail, r.Detail)
+			newMetrics := slices.Clone(r.Metrics)
+			newMetrics = append(newMetrics, TextMetric(
+				KeyWarnThreshold, "Latency Threshold", threshold.String(), false,
+			))
 
-			// Add reason and threshold to the detail
-			newDetail[KeyReason] = ReasonHighLatency
-			newDetail[KeyWarnThreshold] = threshold.String()
-
-			// Update the result detail
-			r.Detail = newDetail
+			r.Metrics = newMetrics
 		}
 
 		out = append(out, r)

@@ -35,7 +35,7 @@ const (
 	ReasonCanceled         = "canceled"
 	ReasonPacketLoss       = "packet_loss"
 	ReasonTotalLoss        = "total_loss"
-	ReasonNoPermission     = "imcp_no_permission"
+	ReasonNoPermission     = "icmp_no_permission"
 	ReasonResolveFailure   = "resolve_failure"
 	ReasonIpBlocked        = "ip_blocked"
 )
