@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"os"
 	"strings"
 	"syscall"
 
@@ -74,4 +75,14 @@ func ClassifyError(err error) string {
 
 	// 5. Fallback for unclassified errors
 	return domain.ReasonUnknown
+}
+
+func isPermissionError(err error) bool {
+	if errors.Is(err, os.ErrPermission) ||
+		errors.Is(err, syscall.EPERM) ||
+		errors.Is(err, syscall.EACCES) {
+		return true
+	}
+	// Fallback check if persmission error
+	return strings.Contains(strings.ToLower(err.Error()), "permission denied")
 }

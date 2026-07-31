@@ -8,6 +8,15 @@ const (
 	KeyQueryName         = "query_name"
 	KeyExpectedAddresses = "expected_addresses"
 	KeyActualAddresses   = "actual_addresses"
+	KeyPacketLoss        = "packet_loss"
+	KeyPacketsSent       = "packets_sent"
+	KeyPacketsReceived   = "packets_received"
+	KeyMinRTT            = "min_rtt"
+	KeyMaxRTT            = "max_rtt"
+	KeyAvgRTT            = "avg_rtt"
+	KeyJitter            = "jitter"
+	KeyResolvedIP        = "resolved_ip"
+	KeyLossThreshold     = "loss_threshold"
 )
 
 const (
@@ -20,8 +29,13 @@ const (
 	ReasonServerFailure    = "server_failure"
 	ReasonUnexpectedAnswer = "unexpected_answer"
 	ReasonNXDomainHijacked = "nx_domain_hijacked"
-	ReasonReset            = "reset"             
-	ReasonUnreachable      = "unreachable"       
-	ReasonPermissionDenied = "permission_denied" 
+	ReasonReset            = "reset"
+	ReasonUnreachable      = "unreachable"
+	ReasonPermissionDenied = "permission_denied"
 	ReasonCanceled         = "canceled"
+	ReasonPacketLoss       = "packet_loss"
+	ReasonTotalLoss        = "total_loss"
+	ReasonNoPermission     = "imcp_no_permission"
+	ReasonResolveFailure   = "resolve_failure"
+	ReasonIpBlocked        = "ip_blocked"
 )
