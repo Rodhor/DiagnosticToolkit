@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/rodhor/DiagnosticToolset/internal/check"
 	"github.com/rodhor/DiagnosticToolset/internal/domain"
+	"github.com/rodhor/DiagnosticToolset/internal/platform"
 	"github.com/rodhor/DiagnosticToolset/internal/report"
 )
 
@@ -19,6 +21,8 @@ func main() {
 func run() int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
+
+	reporter := report.NewConsoleReport(os.Stdout)
 
 	tcpTargets := []string{
 		"1.1.1.1:53",
@@ -37,6 +41,15 @@ func run() int {
 		{Name: "Cloudflare", Address: "1.1.1.1:53"},
 		{Name: "Google", Address: "8.8.8.8:53"},
 		{Name: "UnreachableLocal", Address: "127.0.0.1:9999"},
+	}
+
+	snap, err := platform.New().Snapshot(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "environment discovery failed: %v\n", err)
+	} else {
+		_ = reporter.WriteEnvironment(snap)
+		pingTargets = appendGatewayTarget(pingTargets, snap)
+		resolvers = appendDiscoveredResolvers(resolvers, snap)
 	}
 
 	queries := []check.QuerySpec{
@@ -77,11 +90,10 @@ func run() int {
 			5*time.Second,
 			1.0,
 			50.0,
-			true,
+			false,
 		),
 	}
 
-	reporter := report.NewConsoleReport(os.Stdout)
 	hasFailure := false
 	hasWarning := false
 
