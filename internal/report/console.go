@@ -37,7 +37,7 @@ func (cr *ConsoleReport) WriteResult(result domain.CheckResult) error {
 	}
 
 	var line strings.Builder
-	fmt.Fprintf(&line, "%s [%s] %s", statusSymbol, result.CheckType, result.Target)
+	fmt.Fprintf(&line, "%s [%s] %s", statusSymbol, result.CheckName, result.Target)
 	if result.Status == domain.Pass || result.Status == domain.Warn {
 		fmt.Fprintf(&line, " - %v", result.Latency.Round(time.Microsecond))
 	}
