@@ -7,11 +7,11 @@ import (
 )
 
 type Metric struct {
-	Key     string
-	Label   string
-	Value   any
-	Display string
-	Primary bool
+	Key     string `json:"key"`
+	Label   string `json:"label"`
+	Value   any    `json:"value"`
+	Display string `json:"display"`
+	Primary bool   `json:"primary"`
 }
 
 func DurationMetric(key string, label string, d time.Duration, primary bool) Metric {

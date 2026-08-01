@@ -17,6 +17,8 @@ const (
 	KeyJitter            = "jitter"
 	KeyResolvedIP        = "resolved_ip"
 	KeyLossThreshold     = "loss_threshold"
+	KeyRuntimeMs         = "runtime_ms"
+	KeyIntervalMs        = "interval_ms"
 )
 
 const (
@@ -38,4 +40,5 @@ const (
 	ReasonNoPermission     = "icmp_no_permission"
 	ReasonResolveFailure   = "resolve_failure"
 	ReasonIpBlocked        = "ip_blocked"
+	ReasonOverrun          = "overrun"
 )

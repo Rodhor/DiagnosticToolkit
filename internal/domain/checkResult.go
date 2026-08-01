@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -14,14 +16,39 @@ const (
 )
 
 type CheckResult struct {
-	CheckType CheckType
-	Target    string
-	Status    ResultStatus
-	Latency   time.Duration
-	Reason    string
-	Err       string
-	Timestamp time.Time
-	Metrics   []Metric
+	CheckType            CheckType     `json:"check_type"`
+	CheckName            string        `json:"check_name"`
+	Category             Category      `json:"category"`
+	Target               string        `json:"target"`
+	Status               ResultStatus  `json:"status"`
+	Latency              time.Duration `json:"-"`
+	SkipLatencyThreshold bool          `json:"-"`
+	Reason               string        `json:"reason"`
+	Err                  string        `json:"err"`
+	Timestamp            time.Time     `json:"timestamp"`
+	Metrics              []Metric      `json:"metrics"`
+}
+
+func (r CheckResult) Key() string {
+	return fmt.Sprintf("%s:%s:%s", r.Category, r.CheckName, r.Target)
+}
+
+func (r CheckResult) MarshalJSON() ([]byte, error) {
+	type Alias CheckResult
+	ts := r.Timestamp
+	if ts.IsZero() {
+		ts = time.Now()
+	}
+
+	return json.Marshal(&struct {
+		Alias
+		LatencyMs int64     `json:"latency_ms"`
+		Timestamp time.Time `json:"timestamp"`
+	}{
+		Alias:     Alias(r),
+		LatencyMs: r.Latency.Milliseconds(),
+		Timestamp: ts,
+	})
 }
 
 type CheckResultBuilder struct {
@@ -47,6 +74,10 @@ func (b *CheckResultBuilder) Status(s ResultStatus) *CheckResultBuilder {
 
 func (b *CheckResultBuilder) Latency(d time.Duration) *CheckResultBuilder {
 	b.result.Latency = d
+	return b
+}
+func (b *CheckResultBuilder) SkipLatencyThreshold() *CheckResultBuilder {
+	b.result.SkipLatencyThreshold = true
 	return b
 }
 func (b *CheckResultBuilder) Reason(r string) *CheckResultBuilder {

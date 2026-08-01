@@ -31,9 +31,9 @@ type QuerySpec struct {
 }
 
 type namedResolver struct {
-	name       string
-	targetAdrr string
-	resolver   *net.Resolver
+	name      string
+	targetAdr string
+	resolver  *net.Resolver
 }
 
 type DNSCheck struct {
@@ -70,9 +70,9 @@ func NewDNSCheck(resolvers []ResolverSpec, queries []QuerySpec, timeout time.Dur
 		}
 
 		namedResolvers = append(namedResolvers, namedResolver{
-			name:       spec.Name,
-			targetAdrr: addr,
-			resolver:   r,
+			name:      spec.Name,
+			targetAdr: addr,
+			resolver:  r,
 		})
 	}
 
@@ -116,8 +116,8 @@ func (c *DNSCheck) checkQuery(
 
 	if err != nil {
 		var dnsErr *net.DNSError
-		if errors.As(err, &dnsErr) && resolver.targetAdrr != "" {
-			dnsErr.Server = resolver.targetAdrr
+		if errors.As(err, &dnsErr) && resolver.targetAdr != "" {
+			dnsErr.Server = resolver.targetAdr
 
 		}
 	}
@@ -144,6 +144,7 @@ func (c *DNSCheck) checkQuery(
 				return domain.NewResultBuilder(domain.DNS, targetLabel).
 					Status(domain.Pass).
 					Latency(latency).
+					SkipLatencyThreshold().
 					Timestamp(start).
 					Metrics(metrics).
 					Build(), nil
@@ -170,7 +171,8 @@ func (c *DNSCheck) checkQuery(
 			Latency(latency).
 			Timestamp(start).
 			Reason(domain.ReasonNXDomainHijacked).
-			Err(domain.ErrDNSHijack).
+			Err(fmt.Errorf("%w: %s via %s resolved to %s",
+				domain.ErrDNSHijack, query.Name, resolver.name, strings.Join(ips, ", "))).
 			Metrics(metrics).
 			Build(), nil
 	}
