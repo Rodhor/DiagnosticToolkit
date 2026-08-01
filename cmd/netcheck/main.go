@@ -3,14 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"net"
 	"os"
 	"os/signal"
-	"time"
 
-	"github.com/rodhor/DiagnosticToolset/internal/check"
+	"github.com/rodhor/DiagnosticToolset/internal/app"
 	"github.com/rodhor/DiagnosticToolset/internal/domain"
-	"github.com/rodhor/DiagnosticToolset/internal/platform"
 	"github.com/rodhor/DiagnosticToolset/internal/report"
 )
 
@@ -19,107 +16,40 @@ func main() {
 }
 
 func run() int {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
+	a, err := app.New(ctx, app.Default())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "startup failed: %v\n\n", err)
+		return 1
+	}
 
 	reporter := report.NewConsoleReport(os.Stdout)
 
-	tcpTargets := []string{
-		"1.1.1.1:53",
-		"8.8.8.8:53",
-		"google.com:80",
-		"127.0.0.1:9999",
-	}
-	pingTargets := []string{
-		"1.1.1.1",
-		"8.8.8.8",
-		"192.0.2.1",
-	}
-
-	resolvers := []check.ResolverSpec{
-		{Name: "System", Address: ""},
-		{Name: "Cloudflare", Address: "1.1.1.1:53"},
-		{Name: "Google", Address: "8.8.8.8:53"},
-		{Name: "UnreachableLocal", Address: "127.0.0.1:9999"},
-	}
-
-	snap, err := platform.New().Snapshot(ctx)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "environment discovery failed: %v\n", err)
+	snap, snapErr := a.Environment()
+	if snapErr != nil {
+		fmt.Fprintf(os.Stderr, "environment discovery failed: %v\n", snapErr)
 	} else {
 		_ = reporter.WriteEnvironment(snap)
-		pingTargets = appendGatewayTarget(pingTargets, snap)
-		resolvers = appendDiscoveredResolvers(resolvers, snap)
 	}
 
-	queries := []check.QuerySpec{
-		{
-			Name:              "one.one.one.one",
-			ExpectedOutcome:   check.ExpectedSuccess,
-			ExpectedAddresses: []string{"1.1.1.1"},
-		},
-		{
-			Name:              "dns.google",
-			ExpectedOutcome:   check.ExpectedSuccess,
-			ExpectedAddresses: []string{"8.8.8.8"},
-		},
-		{
-			Name:            "google.com",
-			ExpectedOutcome: check.ExpectedSuccess,
-		},
-		{
-			Name:            "this-domain-definitely-does-not-exist-12345.com",
-			ExpectedOutcome: check.ExpectedNXDomain,
-		},
+	results := a.RunOnce(ctx, nil)
+	for _, r := range results {
+		_ = reporter.WriteResult(r)
 	}
 
-	thresholds := domain.Thresholds{
-		domain.TCP: 300 * time.Millisecond,
-		domain.DNS: 200 * time.Millisecond,
-	}
-	timeout := 3 * time.Second
-	dialer := &net.Dialer{}
+	return exitCode(results)
+}
 
-	checks := []check.Check{
-		check.NewTCPCheck(tcpTargets, timeout, dialer),
-		check.NewDNSCheck(resolvers, queries, timeout),
-		check.NewPingCheck(
-			pingTargets,
-			10,
-			200*time.Millisecond,
-			5*time.Second,
-			1.0,
-			50.0,
-			true,
-		),
-	}
-
-	hasFailure := false
-	hasWarning := false
-
-	for _, c := range checks {
-		// Apply thresholds to the results of each check
-		results := c.Run(ctx)
-
-		results = domain.ApplyThresholds(results, thresholds)
-
-		for _, res := range results {
-			_ = reporter.WriteResult(res)
-
-			if res.Status == domain.Fail {
-				hasFailure = true
-			}
-			if res.Status == domain.Warn {
-				hasWarning = true
-			}
+func exitCode(results []domain.CheckResult) int {
+	for _, r := range results {
+		switch r.Status {
+		case domain.Fail:
+			return 1
+		case domain.Warn:
+			return 2
 		}
-	}
-
-	if hasFailure {
-		return 1
-	}
-	if hasWarning {
-		return 2
 	}
 	return 0
 }

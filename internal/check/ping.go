@@ -9,48 +9,44 @@ import (
 	"github.com/rodhor/DiagnosticToolset/internal/domain"
 )
 
-type PingCheck struct {
-	targets    []string
-	count      int
-	interval   time.Duration
-	timeout    time.Duration
-	warnLoss   float64
-	failLoss   float64
-	privileged bool
+type PingConfig struct {
+	Count      int
+	Interval   time.Duration
+	Timeout    time.Duration
+	WarnLoss   float64
+	FailLoss   float64
+	Privileged bool
 }
 
-func NewPingCheck(
-	targets []string,
-	count int,
-	interval time.Duration,
-	timeout time.Duration,
-	warnLoss float64,
-	failLoss float64,
-	privileged bool,
-) *PingCheck {
-	// Default number of pings
-	if count <= 0 {
-		count = 10
+func (c PingConfig) WithDefaults() PingConfig {
+	if c.Count <= 0 {
+		c.Count = 10
 	}
-	// Default interval
-	if interval <= 0 {
-		interval = 200 * time.Millisecond
+	if c.Interval <= 0 {
+		c.Interval = 200 * time.Millisecond
 	}
 
-	// Floor timeout in cases where send schedule would exceed the maximum timeout
-	minTimeout := time.Duration(count)*interval + 2*time.Second
-	if timeout < minTimeout {
-		timeout = minTimeout
+	if c.FailLoss > 0 && c.WarnLoss > c.FailLoss {
+		c.WarnLoss = c.FailLoss
 	}
 
+	minTimeout := time.Duration(c.Count)*c.Interval + 2*time.Second
+	if c.Timeout < minTimeout {
+		c.Timeout = minTimeout
+	}
+
+	return c
+}
+
+type PingCheck struct {
+	targets []string
+	cfg     PingConfig
+}
+
+func NewPingCheck(targets []string, cfg PingConfig) *PingCheck {
 	return &PingCheck{
-		targets:    targets,
-		count:      count,
-		interval:   interval,
-		timeout:    timeout,
-		warnLoss:   warnLoss,
-		failLoss:   failLoss,
-		privileged: privileged,
+		targets: targets,
+		cfg:     cfg,
 	}
 }
 
@@ -83,10 +79,10 @@ func (c *PingCheck) pingTarget(ctx context.Context, target string) (domain.Check
 			Build(), nil
 	}
 
-	pinger.Count = c.count
-	pinger.Interval = c.interval
-	pinger.Timeout = c.timeout
-	pinger.SetPrivileged(c.privileged)
+	pinger.Count = c.cfg.Count
+	pinger.Interval = c.cfg.Interval
+	pinger.Timeout = c.cfg.Timeout
+	pinger.SetPrivileged(c.cfg.Privileged)
 	runErr := pinger.RunWithContext(ctx)
 	if ctxErr := ctx.Err(); ctxErr != nil {
 		return domain.CheckResult{}, ctxErr
@@ -129,17 +125,17 @@ func (c *PingCheck) statsResult(target string, start time.Time, stats *probing.S
 	status := domain.Pass
 	reason := ""
 	switch {
-	case c.failLoss > 0 && stats.PacketLoss >= c.failLoss:
+	case c.cfg.FailLoss > 0 && stats.PacketLoss >= c.cfg.FailLoss:
 		status = domain.Fail
 		reason = domain.ReasonPacketLoss
 		metrics = append(metrics,
-			domain.PercentMetric(domain.KeyLossThreshold, "Loss Threshold", c.failLoss, false),
+			domain.PercentMetric(domain.KeyLossThreshold, "Loss Threshold", c.cfg.FailLoss, false),
 		)
-	case c.warnLoss > 0 && stats.PacketLoss >= c.warnLoss:
+	case c.cfg.WarnLoss > 0 && stats.PacketLoss >= c.cfg.WarnLoss:
 		status = domain.Warn
 		reason = domain.ReasonPacketLoss
 		metrics = append(metrics,
-			domain.PercentMetric(domain.KeyLossThreshold, "Loss Threshold", c.warnLoss, false),
+			domain.PercentMetric(domain.KeyLossThreshold, "Loss Threshold", c.cfg.WarnLoss, false),
 		)
 	}
 
@@ -156,7 +152,7 @@ func (c *PingCheck) statsResult(target string, start time.Time, stats *probing.S
 func (c *PingCheck) runErrorResult(target string, start time.Time, err error) domain.CheckResult {
 	if isPermissionError(err) {
 		var hint string
-		if c.privileged {
+		if c.cfg.Privileged {
 			hint = "raw ICMP socket denied — grant the capability with " +
 				"`sudo setcap cap_net_raw+ep <binary>`, or run unprivileged"
 		} else {
