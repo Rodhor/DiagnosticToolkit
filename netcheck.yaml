@@ -1,0 +1,59 @@
+# netcheck configuration
+#
+# Every setting is optional. Delete anything you do not need — the
+# built-in defaults apply. With no file at all, netcheck discovers the
+# gateway and DNS servers from the machine and checks those.
+
+# How long a single TCP connect or DNS query may take.
+timeout: 3s
+
+# How many checks run at once. Keep this modest: the tool measures the
+# network using this machine's own network stack, and too much parallelism
+# measures the tool rather than the network.
+concurrency: 4
+
+# Latency above these values turns a passing result into a warning.
+thresholds:
+  tcp: 300ms
+  dns: 200ms
+  ping: 150ms
+
+monitor:
+  # Fallback interval for checks without their own schedule.
+  default_interval: 30s
+
+ping:
+  count: 10
+  interval: 200ms
+  warn_loss_pct: 1
+  fail_loss_pct: 50
+  # false uses unprivileged ICMP, which needs no capability on the binary.
+  # On Linux it requires: sysctl net.ipv4.ping_group_range="0 2147483647"
+  # true uses raw sockets, which requires: setcap cap_net_raw+ep ./netcheck
+  privileged: false
+
+targets:
+  tcp:
+    - "1.1.1.1:53"
+    - "8.8.8.8:53"
+    - "google.com:80"
+  ping:
+    - "1.1.1.1"
+    - "8.8.8.8"
+  # Known-good public resolvers. The machine's own resolvers are discovered
+  # automatically and checked separately — comparing the two is what tells
+  # you whether a DNS problem is the customer's or the internet's.
+  dns_resolvers:
+    - { name: "System", address: "" } # empty address = OS resolver
+    - { name: "Cloudflare", address: "1.1.1.1" }
+    - { name: "Google", address: "8.8.8.8" }
+
+# Run against every resolver, discovered and configured alike.
+dns_queries:
+  - name: one.one.one.one
+    expected: ["1.1.1.1"]
+  - name: google.com
+  # A name that should not resolve. If it does, something upstream is
+  # hijacking failed lookups.
+  - name: this-domain-definitely-does-not-exist-12345.com
+    expect: NXDOMAIN
