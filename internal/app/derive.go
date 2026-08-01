@@ -26,6 +26,9 @@ func discoveredResolvers(configured []check.ResolverSpec, snap platform.Snapshot
 
 	add := func(addrs []netip.Addr, label string) {
 		for _, a := range addrs {
+			if a.IsLinkLocalUnicast() {
+				continue
+			}
 			addr := net.JoinHostPort(a.String(), "53")
 			if seen[addr] {
 				continue

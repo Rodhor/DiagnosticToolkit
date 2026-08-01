@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/netip"
 	"strings"
+	"time"
 
 	"github.com/rodhor/DiagnosticToolset/internal/platform"
 )
@@ -63,8 +64,8 @@ func (cr *ConsoleReport) WriteEnvironment(snap platform.Snapshot) error {
 			name,
 			formatAddr(lease.Server),
 			formatAddr(lease.Router),
-			lease.Obtained.Format("2006-01-02 15:04:05"),
-			lease.Expires.Format("2006-01-02 15:04:05"),
+			formatTime(lease.Obtained),
+			formatTime(lease.Expires),
 			lease.Source)
 	}
 
@@ -74,6 +75,15 @@ func (cr *ConsoleReport) WriteEnvironment(snap platform.Snapshot) error {
 
 	_, err := fmt.Fprintln(cr.writer, b.String())
 	return err
+}
+
+// formatTime guards against rendering a zero time.Time as 0001-01-01,
+// which reads as a bug rather than as absent data.
+func formatTime(t time.Time) string {
+	if t.IsZero() {
+		return "unknown"
+	}
+	return t.Format("2006-01-02 15:04:05")
 }
 
 func formatAddr(a netip.Addr) string {

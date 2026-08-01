@@ -2,6 +2,7 @@ package platform
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -56,12 +57,22 @@ func (p *linuxProvider) Snapshot(ctx context.Context) (Snapshot, error) {
 	}
 
 	for _, ifi := range snap.Interfaces {
-		if ifi.Loopback || !ifi.Up {
+		// An interface that is up but has no addresses has no lease to
+		// find; a stale lease file from a previous connection is not
+		// useful information.
+		if ifi.Loopback || !ifi.Up || len(ifi.Addresses) == 0 {
 			continue
 		}
 		lease, err := readLease(ifi.Name)
 		if err != nil {
-			snap.addWarning("no DHCP lease for %s: %v", ifi.Name, err)
+			switch {
+			case errors.Is(err, ErrLeaseUnavailable):
+				snap.addWarning("DHCP lease detail unavailable for %s (NetworkManager does not expose it on disk)", ifi.Name)
+			case errors.Is(err, ErrLeasePermission):
+				snap.addWarning("DHCP lease for %s requires root; run with sudo to include it", ifi.Name)
+			default:
+				snap.addWarning("no DHCP lease for %s: %v", ifi.Name, err)
+			}
 			continue
 		}
 		snap.Leases[ifi.Name] = lease
