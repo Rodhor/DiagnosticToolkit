@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 
 	"github.com/rodhor/DiagnosticToolset/internal/app"
 	"github.com/rodhor/DiagnosticToolset/internal/domain"
@@ -16,10 +18,18 @@ func main() {
 }
 
 func run() int {
+	configPath := flag.String("config", defaultConfigPath(), "path to config file")
+	flag.Parse()
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	a, err := app.New(ctx, app.Default())
+	cfg, err := app.Load(*configPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "config: %v\n", err)
+		return 1
+	}
+	a, err := app.New(ctx, cfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "startup failed: %v\n\n", err)
 		return 1
@@ -52,4 +62,12 @@ func exitCode(results []domain.CheckResult) int {
 		}
 	}
 	return 0
+}
+
+func defaultConfigPath() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return "netcheck.yaml"
+	}
+	return filepath.Join(filepath.Dir(exe), "netcheck.yaml")
 }
