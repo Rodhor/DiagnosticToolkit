@@ -14,6 +14,7 @@ type fileConfig struct {
 	Timeout     string            `yaml:"timeout"`
 	Concurrency *int              `yaml:"concurrency"`
 	Thresholds  map[string]string `yaml:"thresholds"`
+	Output      *outputFile       `yaml:"output"`
 	Monitor     *monitoringFile   `yaml:"monitor"`
 	Ping        *pingFile         `yaml:"ping"`
 	Targets     *targetsFile      `yaml:"targets"`
@@ -48,6 +49,11 @@ type queryFile struct {
 	Name     string   `yaml:"name"`
 	Expect   string   `yaml:"expect"`
 	Expected []string `yaml:"expected"`
+}
+
+type outputFile struct {
+	Results string `yaml:"results"`
+	Summary string `yaml:"summary"`
 }
 
 func Load(path string) (Config, error) {

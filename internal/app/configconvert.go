@@ -30,6 +30,15 @@ func (fc fileConfig) merge(base Config) (Config, error) {
 		}
 	}
 
+	if fc.Output != nil {
+		if fc.Output.Results != "" {
+			cfg.OutputPath = fc.Output.Results
+		}
+		if fc.Output.Summary != "" {
+			cfg.SummaryPath = fc.Output.Summary
+		}
+	}
+
 	if fc.Thresholds != nil {
 		if cfg.Thresholds, err = convertThresholds(fc.Thresholds); err != nil {
 			return Config{}, err
