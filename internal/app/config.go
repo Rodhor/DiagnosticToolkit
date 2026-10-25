@@ -43,7 +43,7 @@ func Default() Config {
 			Timeout:    5 * time.Second,
 			WarnLoss:   1.0,
 			FailLoss:   50.0,
-			Privileged: false,
+			Privileged: true,
 		},
 	}
 }
