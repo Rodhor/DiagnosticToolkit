@@ -147,6 +147,7 @@ func (c *DNSCheck) checkQuery(
 					SkipLatencyThreshold().
 					Timestamp(start).
 					Metrics(metrics).
+					Expected(string(outcome)).
 					Build(), nil
 			}
 
@@ -158,6 +159,7 @@ func (c *DNSCheck) checkQuery(
 				Reason(reason).
 				Metrics(metrics).
 				Err(err).
+				Expected(string(outcome)).
 				Build(), nil
 		}
 
@@ -174,6 +176,7 @@ func (c *DNSCheck) checkQuery(
 			Err(fmt.Errorf("%w: %s via %s resolved to %s",
 				domain.ErrDNSHijack, query.Name, resolver.name, strings.Join(ips, ", "))).
 			Metrics(metrics).
+			Expected(string(outcome)).
 			Build(), nil
 	}
 
@@ -185,6 +188,7 @@ func (c *DNSCheck) checkQuery(
 			Reason(ClassifyError(err)).
 			Err(err).
 			Metrics(metrics).
+			Expected(string(outcome)).
 			Build(), nil
 	}
 
@@ -207,6 +211,7 @@ func (c *DNSCheck) checkQuery(
 				Reason(domain.ReasonUnexpectedAnswer).
 				Err(fmt.Errorf("expected addresses %v not found in answer %v", sortedExpected, ips)).
 				Metrics(metrics).
+				Expected(string(outcome)).
 				Build(), nil
 		}
 	}
@@ -216,6 +221,7 @@ func (c *DNSCheck) checkQuery(
 		Latency(latency).
 		Timestamp(start).
 		Metrics(metrics).
+		Expected(string(outcome)).
 		Build(), nil
 }
 
