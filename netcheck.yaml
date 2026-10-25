@@ -18,8 +18,18 @@ thresholds:
   dns: 200ms
   ping: 150ms
 
+# File output. Applies to both snapshot and monitor runs.
+# Leave a value empty (or delete the line) to disable that file.
+# The -output and -summary flags override these.
+output:
+  # One JSON object per result, appended. Useful for long monitor runs.
+  results: "results.json"
+  # The run summary as a single JSON document. Overwritten each run.
+  summary: "summary.json"
+
 monitor:
   # Fallback interval for checks without their own schedule.
+  # To trigger monitoring mode, run with the flag '--monitor' or shorthand '-m'
   default_interval: 30s
 
 ping:

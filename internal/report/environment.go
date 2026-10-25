@@ -16,7 +16,8 @@ import (
 func (cr *ConsoleReport) WriteEnvironment(snap platform.Snapshot) error {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "=== Environment (%s) ===\n", snap.TakenAt.Format("2006-01-02 15:04:05"))
+	writeSection(&b, fmt.Sprintf("Environment  (%s)",
+		snap.TakenAt.Format("2006-01-02 15:04:05")))
 
 	if snap.Hostname != "" {
 		fmt.Fprintf(&b, "Hostname: %s\n", snap.Hostname)
@@ -73,7 +74,7 @@ func (cr *ConsoleReport) WriteEnvironment(snap platform.Snapshot) error {
 		fmt.Fprintf(&b, "[WARN] %s\n", w)
 	}
 
-	_, err := fmt.Fprintln(cr.writer, b.String())
+	_, err := fmt.Fprint(cr.writer, b.String())
 	return err
 }
 

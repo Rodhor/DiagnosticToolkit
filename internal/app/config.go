@@ -22,6 +22,9 @@ type Config struct {
 	Ping        check.PingConfig
 	Concurrency int
 	Interval    time.Duration
+	Monitor     bool
+	OutputPath  string
+	SummaryPath string
 }
 
 func Default() Config {

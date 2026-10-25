@@ -2,3 +2,6 @@
 /dist
 /bin
 netcheck.yaml
+results.json
+summary.json
+dist/
