@@ -6,6 +6,7 @@ binary := "netcheck"
 outdir := "bin"
 distdir := "dist"
 pkg := "./cmd/netcheck"
+pkgweb := "./cmd/netcheck-web"
 version := `git describe --tags --always --dirty 2>/dev/null || echo "dev"`
 
 default:
@@ -69,6 +70,9 @@ clean-dist:
 # the executable, which under `go run` is a temp dir — so pass it explicitly.
 run *ARGS:
     go run {{ pkg }} -config ./netcheck.yaml {{ ARGS }}
+
+run-web *ARGS:
+    go run {{ pkgweb }} -config ./netcheck.yaml {{ ARGS }}
 
 # Run continuously until interrupted.
 run-monitor *ARGS:
