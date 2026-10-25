@@ -17,7 +17,7 @@ func PartialStatus(s *server.Server) http.HandlerFunc {
 
 func PartialResults(s *server.Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		b, _ := json.Marshal(s.State().Recent())
+		b, _ := json.MarshalIndent(s.State().Recent(), "", "  ")
 		templ.Handler(components.Results(string(b))).ServeHTTP(w, r)
 	}
 }

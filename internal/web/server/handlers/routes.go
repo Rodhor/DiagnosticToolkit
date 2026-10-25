@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/templui/templui/utils"
 	"github.com/rodhor/DiagnosticToolset/internal/web/server"
 )
 
@@ -26,6 +27,9 @@ func Routes(s *server.Server) *http.ServeMux {
 	mux.Handle("GET /partials/environment", PartialEnvironment(s))
 
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static"))))
+	mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
+
+	utils.SetupScriptRoutes(mux, true)
 
 	return mux
 }
