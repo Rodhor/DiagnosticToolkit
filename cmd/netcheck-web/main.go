@@ -63,17 +63,18 @@ func run() int {
 		fmt.Fprintf(os.Stderr, "startup failed: %v\n\n", err)
 		return 1
 	}
-	if err := runServer(ctx, a, addr); err != nil {
+	if err := runServer(ctx, a, addr, *configPath); err != nil {
 		slog.Error("server error", "err", err)
 		return 1
 	}
 	return 0
 }
 
-func runServer(ctx context.Context, a *app.App, addr string) error {
+func runServer(ctx context.Context, a *app.App, addr string, configPath string) error {
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           server.LocalhostOnly(handlers.Routes(server.New(a))),		ReadHeaderTimeout: 5 * time.Second,
+		Handler:           server.LocalhostOnly(handlers.Routes(server.New(a, configPath))),
+		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
 
