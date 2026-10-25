@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/rodhor/DiagnosticToolset/internal/web/server"
 )
@@ -21,19 +22,29 @@ func SSE(s *server.Server) http.HandlerFunc {
 			return
 		}
 
+		// Send current results immediately on connect.
+		if b, err := s.State().RenderResults(); err == nil {
+			writeSSE(w, flusher, b)
+		}
+
 		for {
 			select {
 			case msg, ok := <-client.Ch:
 				if !ok {
 					return
 				}
-				w.Write([]byte("data: "))
-				w.Write(msg)
-				w.Write([]byte("\n\n"))
-				flusher.Flush()
+				writeSSE(w, flusher, msg)
 			case <-r.Context().Done():
 				return
 			}
 		}
 	}
+}
+
+func writeSSE(w http.ResponseWriter, flusher http.Flusher, data []byte) {
+	for _, line := range strings.Split(string(data), "\n") {
+		w.Write([]byte("data: " + line + "\n"))
+	}
+	w.Write([]byte("\n"))
+	flusher.Flush()
 }

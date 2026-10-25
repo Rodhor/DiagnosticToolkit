@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/a-h/templ"
@@ -17,8 +16,7 @@ func PartialStatus(s *server.Server) http.HandlerFunc {
 
 func PartialResults(s *server.Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		b, _ := json.MarshalIndent(s.State().Recent(), "", "  ")
-		templ.Handler(components.Results(string(b))).ServeHTTP(w, r)
+		templ.Handler(components.Results(s.State().Recent())).ServeHTTP(w, r)
 	}
 }
 

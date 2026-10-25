@@ -36,3 +36,14 @@ func Environment(s *server.Server) http.HandlerFunc {
 		templ.Handler(pages.Environment(snap)).ServeHTTP(w, r)
 	}
 }
+
+func Summary(s *server.Server) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sum := s.State().Summary()
+		if sum == nil {
+			http.Error(w, "no summary available; run monitoring first", http.StatusNotFound)
+			return
+		}
+		templ.Handler(pages.Summary(sum)).ServeHTTP(w, r)
+	}
+}

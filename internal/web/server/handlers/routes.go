@@ -14,6 +14,7 @@ func Routes(s *server.Server) *http.ServeMux {
 	mux.Handle("GET /logs", Logs(s))
 	mux.Handle("GET /settings", Settings(s))
 	mux.Handle("GET /environment", Environment(s))
+	mux.Handle("GET /summary", Summary(s))
 
 	mux.Handle("POST /actions/start", Start(s))
 	mux.Handle("POST /actions/stop", Stop(s))
