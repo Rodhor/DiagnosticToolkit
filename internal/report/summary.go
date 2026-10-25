@@ -26,6 +26,7 @@ type CheckSummary struct {
 	Category       domain.Category `json:"category"`
 	CheckName      string          `json:"check_name"`
 	Target         string          `json:"target"`
+	Expected       string          `json:"expected,omitempty"`
 	Total          int             `json:"total"`
 	Passed         int             `json:"passed"`
 	Warned         int             `json:"warned"`
@@ -85,12 +86,16 @@ func (s *Summary) Add(r domain.CheckResult) {
 			Category:  r.Category,
 			CheckName: r.CheckName,
 			Target:    r.Target,
+			Expected:  r.Expected,
 			samples:   []time.Duration{},
 		}
 		s.Checks[key] = cs
 	}
 
 	cs.Total++
+	if r.Expected != "" {
+		cs.Expected = r.Expected
+	}
 
 	// 1. Increment counters based on result status
 	switch r.Status {

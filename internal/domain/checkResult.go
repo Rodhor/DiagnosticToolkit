@@ -21,6 +21,7 @@ type CheckResult struct {
 	Category             Category      `json:"category"`
 	Target               string        `json:"target"`
 	Status               ResultStatus  `json:"status"`
+	Expected             string        `json:"expected,omitempty"`
 	Latency              time.Duration `json:"-"`
 	SkipLatencyThreshold bool          `json:"-"`
 	Reason               string        `json:"reason"`
@@ -69,6 +70,11 @@ func NewResultBuilder(checkType CheckType, target string) *CheckResultBuilder {
 
 func (b *CheckResultBuilder) Status(s ResultStatus) *CheckResultBuilder {
 	b.result.Status = s
+	return b
+}
+
+func (b *CheckResultBuilder) Expected(s string) *CheckResultBuilder {
+	b.result.Expected = s
 	return b
 }
 
