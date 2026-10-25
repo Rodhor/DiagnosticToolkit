@@ -1,0 +1,2 @@
+@source "../../web/templates/**/*.templ";
+@source "/home/rodhor/go/pkg/mod/github.com/templui/templui@v1.13.2/components/**/*.templ";

@@ -1,0 +1,83 @@
+package components
+
+import (
+	"fmt"
+	"sort"
+	"time"
+
+	"github.com/templui/templui/components/table"
+
+	"github.com/rodhor/DiagnosticToolset/internal/report"
+)
+
+templ Summary(s *report.Summary) {
+	<div class="space-y-2">
+		<p class="text-sm text-muted-foreground">
+			Window: { s.Started.Format("2006-01-02 15:04:05") } -&gt; { s.Ended.Format("2006-01-02 15:04:05") }
+			({ s.Ended.Sub(s.Started).Round(time.Second).String() })
+		</p>
+		<div class="h-[80vh] overflow-y-auto overflow-x-auto rounded-md border">
+			@table.Table() {
+			@table.Header() {
+				@table.Row() {
+					@table.Head() { Expected }
+					@table.Head() { Category }
+					@table.Head() { Check }
+					@table.Head() { Target }
+					@table.Head() { Total }
+					@table.Head() { Pass }
+					@table.Head() { Warn }
+					@table.Head() { Fail }
+					@table.Head() { p50 }
+					@table.Head() { p95 }
+					@table.Head() { max }
+				}
+			}
+			@table.Body() {
+				for _, cs := range sortedChecks(s) {
+					@table.Row() {
+						@table.Cell() { { cs.Expected } }
+						@table.Cell() { { string(cs.Category) } }
+						@table.Cell() { { cs.CheckName } }
+						@table.Cell() { { cs.Target } }
+						@table.Cell() { { fmt.Sprintf("%d", cs.Total) } }
+						@table.Cell() { { fmt.Sprintf("%d", cs.Passed) } }
+						@table.Cell() { { fmt.Sprintf("%d", cs.Warned) } }
+						@table.Cell() { { fmt.Sprintf("%d", cs.Failed) } }
+						@table.Cell() { { formatDur(cs.LatencyP50) } }
+						@table.Cell() { { formatDur(cs.LatencyP95) } }
+						@table.Cell() { { formatDur(cs.MaxLatency) } }
+					}
+				}
+			}
+		}
+	</div>
+	</div>
+}
+
+func sortedChecks(s *report.Summary) []*report.CheckSummary {
+	if s == nil {
+		return nil
+	}
+	out := make([]*report.CheckSummary, 0, len(s.Checks))
+	for _, cs := range s.Checks {
+		out = append(out, cs)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Category != out[j].Category {
+			return out[i].Category < out[j].Category
+		}
+		if out[i].CheckName != out[j].CheckName {
+			return out[i].CheckName < out[j].CheckName
+		}
+		return out[i].Target < out[j].Target
+	})
+	return out
+}
+
+func formatDur(d time.Duration) string {
+	if d == 0 {
+		return "-"
+	}
+	return d.Round(time.Microsecond).String()
+}

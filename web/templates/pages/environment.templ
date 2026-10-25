@@ -1,0 +1,24 @@
+package pages
+
+import (
+	"fmt"
+
+	"github.com/templui/templui/components/card"
+)
+
+templ Environment(snap any) {
+	<!DOCTYPE html>
+	<html class="dark">
+	<head><link rel="stylesheet" href="/assets/css/output.css"><title>Environment</title></head>
+	<body class="p-6">
+		@card.Card() {
+			@card.Header() {
+				@card.Title() { Environment }
+			}
+			@card.Content() {
+				<pre class="text-sm">{ fmt.Sprintf("%+v", snap) }</pre>
+			}
+		}
+	</body>
+	</html>
+}

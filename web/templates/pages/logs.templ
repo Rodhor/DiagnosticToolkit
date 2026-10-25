@@ -1,0 +1,38 @@
+package pages
+
+import (
+	"github.com/templui/templui/components/card"
+)
+
+templ Logs(runID int) {
+	<!DOCTYPE html>
+	<html class="dark">
+	<head>
+		<link rel="stylesheet" href="/assets/css/output.css">
+		<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+		<title>Logs</title>
+	</head>
+	<body class="p-6">
+		@card.Card() {
+			@card.Header() {
+				@card.Title() { Logs }
+				@card.Description() { Recent check results (auto-refreshing) }
+			}
+			@card.Content() {
+				<div id="results">Loading...</div>
+			}
+		}
+		<script>window.__runId = { runID };</script>
+		<script>
+			const runParam = (window.__runId > 0) ? ('?run=' + window.__runId) : '';
+			async function refreshResults() {
+				const r = await fetch('/partials/results' + runParam);
+				if (r.ok) document.getElementById('results').innerHTML = await r.text();
+			}
+			refreshResults();
+			setInterval(refreshResults, 2000);
+		</script>
+		<div class="mt-4"><a href="/" class="underline">Back to dashboard</a></div>
+	</body>
+	</html>
+}

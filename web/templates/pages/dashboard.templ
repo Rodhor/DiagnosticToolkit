@@ -1,0 +1,95 @@
+package pages
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/templui/templui/components/button"
+	"github.com/templui/templui/components/card"
+
+	"github.com/rodhor/DiagnosticToolset/internal/web/server"
+	"github.com/rodhor/DiagnosticToolset/web/templates/components"
+)
+
+templ Dashboard(running bool, runs []*server.Run) {
+	<!DOCTYPE html>
+	<html class="dark">
+	<head>
+		<link rel="stylesheet" href="/assets/css/output.css">
+		<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+		<title>Dashboard</title>
+	</head>
+	<body class="p-6 space-y-4">
+		@card.Card() {
+			@card.Header() {
+				@card.Title() { Dashboard }
+				@card.Description() { Network diagnostics control panel }
+			}
+			@card.Content() {
+				<p class="mb-4">Status: @components.Status(running)</p>
+				<div class="flex gap-2">
+					@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"hx-post": "/actions/start", "hx-on::after-request": "location.reload()"}}) { Start }
+					@button.Button(button.Props{Variant: button.VariantOutline, Type: button.TypeButton, Attributes: templ.Attributes{"hx-post": "/actions/stop"}}) { Stop }
+				</div>
+			}
+		}
+		<div class="flex gap-4 mt-4">
+			<a href="/logs" class="underline">Logs</a>
+			<a href="/settings" class="underline">Settings</a>
+			<a href="/environment" class="underline">Environment</a>
+			<a href="/summary" class="underline">Summary</a>
+		</div>
+		<div id="results" class="mt-6">Loading...</div>
+		<script>
+			async function refreshResults() {
+				const r = await fetch('/partials/results');
+				if (r.ok) document.getElementById('results').innerHTML = await r.text();
+			}
+			refreshResults();
+			setInterval(refreshResults, 2000);
+		</script>
+		if !running {
+			<h2 class="text-lg font-semibold mt-6">Previous runs</h2>
+		if len(runs) == 0 {
+			<p class="text-muted-foreground">No runs yet.</p>
+		} else {
+			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+				for _, r := range runs {
+					@card.Card() {
+						@card.Header() {
+							@card.Title() { Run #{ fmt.Sprintf("%d", r.ID) } }
+							@card.Description() {
+								if r.Running {
+									<span class="text-green-600">running</span>
+								} else {
+									{ r.Ended.Sub(r.Started).Round(time.Second).String() }
+								}
+							}
+						}
+						@card.Content() {
+							<p class="text-sm text-muted-foreground mb-2">{ r.Started.Format("2006-01-02 15:04:05") }</p>
+							<p class="text-sm mb-3">Observations: { fmt.Sprintf("%d", runObs(r)) }</p>
+							<div class="flex gap-2">
+								<a href={ templ.SafeURL(fmt.Sprintf("/logs?run=%d", r.ID)) } class="underline text-sm">Logs</a>
+								<a href={ templ.SafeURL(fmt.Sprintf("/summary?run=%d", r.ID)) } class="underline text-sm">Summary</a>
+							</div>
+						}
+					}
+				}
+			</div>
+		}
+		}
+	</body>
+	</html>
+}
+
+func runObs(r *server.Run) int {
+	if r == nil || r.Summary == nil {
+		return 0
+	}
+	total := 0
+	for _, cs := range r.Summary.Checks {
+		total += cs.Total
+	}
+	return total
+}

@@ -1,0 +1,57 @@
+package components
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/templui/templui/components/badge"
+	"github.com/templui/templui/components/table"
+
+	"github.com/rodhor/DiagnosticToolset/internal/domain"
+)
+
+templ Results(items []domain.CheckResult) {
+	<div class="h-[80vh] overflow-y-auto overflow-x-auto rounded-md border">
+		@table.Table() {
+		@table.Header() {
+			@table.Row() {
+				@table.Head() { Status }
+				@table.Head() { Expected }
+				@table.Head() { Category }
+				@table.Head() { Check }
+				@table.Head() { Target }
+				@table.Head() { Latency }
+				@table.Head() { Time }
+			}
+		}
+		@table.Body() {
+			for _, r := range items {
+				@table.Row() {
+					@table.Cell() {
+						if r.Status == domain.Pass {
+							@badge.Badge(badge.Props{Variant: badge.VariantDefault}) { PASS }
+						} else if r.Status == domain.Warn {
+							@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) { WARN }
+						} else {
+							@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) { FAIL }
+						}
+					}
+					@table.Cell() { { r.Expected } }
+					@table.Cell() { { string(r.Category) } }
+					@table.Cell() { { r.CheckName } }
+					@table.Cell() { { r.Target } }
+					@table.Cell() { { formatLatency(r.Latency) } }
+					@table.Cell() { { r.Timestamp.Format("15:04:05") } }
+				}
+			}
+		}
+	}
+	</div>
+}
+
+func formatLatency(d time.Duration) string {
+	if d == 0 {
+		return "-"
+	}
+	return fmt.Sprintf("%v", d.Round(time.Microsecond))
+}

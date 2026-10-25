@@ -1,0 +1,32 @@
+package pages
+
+import (
+	"github.com/templui/templui/components/card"
+
+	"github.com/rodhor/DiagnosticToolset/internal/report"
+	"github.com/rodhor/DiagnosticToolset/web/templates/components"
+)
+
+templ Summary(sum *report.Summary) {
+	<!DOCTYPE html>
+	<html class="dark">
+	<head>
+		<link rel="stylesheet" href="/assets/css/output.css">
+		<title>Summary</title>
+	</head>
+	<body class="p-6 space-y-4">
+		@card.Card() {
+			@card.Header() {
+				@card.Title() { Run Summary }
+				@card.Description() { Aggregated results for the selected run }
+			}
+			@card.Content() {
+				@components.Summary(sum)
+			}
+		}
+		<div class="flex gap-4">
+			<a href="/" class="underline">Back to dashboard</a>
+		</div>
+	</body>
+	</html>
+}
