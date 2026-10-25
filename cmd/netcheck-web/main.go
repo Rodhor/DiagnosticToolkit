@@ -16,6 +16,7 @@ import (
 	"github.com/rodhor/DiagnosticToolset/internal/app"
 	"github.com/rodhor/DiagnosticToolset/internal/helper"
 	"github.com/rodhor/DiagnosticToolset/internal/web/server"
+	"github.com/rodhor/DiagnosticToolset/internal/web/server/handlers"
 )
 
 func main() {
@@ -72,8 +73,7 @@ func run() int {
 func runServer(ctx context.Context, a *app.App, addr string) error {
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           server.New(a).Routes(),
-		ReadHeaderTimeout: 5 * time.Second,
+		Handler:           server.LocalhostOnly(handlers.Routes(server.New(a))),		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
 
