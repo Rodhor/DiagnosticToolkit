@@ -5,12 +5,13 @@ import (
 )
 
 type Server struct {
-	app   *app.App
-	state *State
+	app        *app.App
+	configPath string
+	state      *State
 }
 
-func New(a *app.App) *Server {
-	return &Server{app: a, state: newState(a)}
+func New(a *app.App, configPath string) *Server {
+	return &Server{app: a, configPath: configPath, state: newState(a, configPath)}
 }
 
 func (s *Server) State() *State { return s.state }

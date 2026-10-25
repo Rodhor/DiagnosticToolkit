@@ -20,6 +20,7 @@ func Routes(s *server.Server) *http.ServeMux {
 	mux.Handle("POST /actions/stop", Stop(s))
 	mux.Handle("POST /actions/run-once", RunOnce(s))
 	mux.Handle("POST /actions/reload-config", ReloadConfig(s))
+	mux.Handle("POST /actions/save-config", SaveConfig(s))
 
 	mux.Handle("GET /stream", SSE(s))
 
@@ -28,7 +29,11 @@ func Routes(s *server.Server) *http.ServeMux {
 	mux.Handle("GET /partials/environment", PartialEnvironment(s))
 
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static"))))
-	mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
+	assetHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		http.FileServer(http.Dir("./assets")).ServeHTTP(w, r)
+	})
+	mux.Handle("GET /assets/", http.StripPrefix("/assets/", assetHandler))
 
 	utils.SetupScriptRoutes(mux, true)
 
