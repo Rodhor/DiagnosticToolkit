@@ -27,10 +27,8 @@ ping:
   interval: 200ms
   warn_loss_pct: 1
   fail_loss_pct: 50
-  # false uses unprivileged ICMP, which needs no capability on the binary.
   # On Linux it requires: sysctl net.ipv4.ping_group_range="0 2147483647"
   # true uses raw sockets, which requires: setcap cap_net_raw+ep ./netcheck
-  privileged: false
 
 targets:
   tcp:
