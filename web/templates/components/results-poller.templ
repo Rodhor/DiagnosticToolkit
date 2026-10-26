@@ -1,0 +1,8 @@
+package components
+
+templ ResultsPoller(url string) {
+	<div id="results-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+	<div id="results" class="results-host" data-results-poll hx-get={ url } hx-trigger="load, every 2s" hx-swap="innerHTML" aria-live="off">
+		Loading results…
+	</div>
+}

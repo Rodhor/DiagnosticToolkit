@@ -10,12 +10,6 @@ import (
 	"github.com/rodhor/DiagnosticToolset/web/templates/components"
 )
 
-func PartialStatus(s *server.Server) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		templ.Handler(components.Status(s.State().IsRunning())).ServeHTTP(w, r)
-	}
-}
-
 func PartialResults(s *server.Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		runID := 0
@@ -36,16 +30,5 @@ func PartialResults(s *server.Server) http.HandlerFunc {
 			return
 		}
 		templ.Handler(components.Results(items)).ServeHTTP(w, r)
-	}
-}
-
-func PartialEnvironment(s *server.Server) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		snap, err := s.State().App().Environment()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		templ.Handler(components.Environment(snap)).ServeHTTP(w, r)
 	}
 }

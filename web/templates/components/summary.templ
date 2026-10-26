@@ -11,47 +11,95 @@ import (
 )
 
 templ Summary(s *report.Summary) {
-	<div class="space-y-2">
-		<p class="text-sm text-muted-foreground">
-			Window: { s.Started.Format("2006-01-02 15:04:05") } -&gt; { s.Ended.Format("2006-01-02 15:04:05") }
-			({ s.Ended.Sub(s.Started).Round(time.Second).String() })
-		</p>
-		<div class="h-[80vh] overflow-y-auto overflow-x-auto rounded-md border">
-			@table.Table() {
+	<div class="summary-overview">
+		<div class="summary-period"><span>Run window</span><strong>{ s.Started.Format("Jan 02, 2006 · 15:04:05") } – { s.Ended.Format("15:04:05") }</strong><small>{ s.Ended.Sub(s.Started).Round(time.Second).String() }</small></div>
+		<div class="summary-counts"><span><strong>{ fmt.Sprintf("%d", summaryTotal(s)) }</strong> observations</span><span><strong class="text-pass">{ fmt.Sprintf("%d", summaryPassed(s)) }</strong> passed</span><span><strong class="text-warn">{ fmt.Sprintf("%d", summaryWarned(s)) }</strong> warnings</span><span><strong class="text-fail">{ fmt.Sprintf("%d", summaryFailed(s)) }</strong> failed</span><span><strong>{ fmt.Sprintf("%d", summaryUnknown(s)) }</strong> unknown</span></div>
+	</div>
+	<div class="table-scroll">
+		@table.Table(table.Props{Class: "results-table summary-table"}) {
 			@table.Header() {
 				@table.Row() {
-					@table.Head() { Expected }
-					@table.Head() { Category }
-					@table.Head() { Check }
-					@table.Head() { Target }
-					@table.Head() { Total }
-					@table.Head() { Pass }
-					@table.Head() { Warn }
-					@table.Head() { Fail }
-					@table.Head() { p50 }
-					@table.Head() { p95 }
-					@table.Head() { max }
+					@table.Head() {
+						Expected 
+					}
+					@table.Head() {
+						Category 
+					}
+					@table.Head() {
+						Check 
+					}
+					@table.Head() {
+						Target 
+					}
+					@table.Head() {
+						Obs. 
+					}
+					@table.Head() {
+						Pass 
+					}
+					@table.Head() {
+						Warn 
+					}
+					@table.Head() {
+						Fail 
+					}
+					@table.Head() {
+						Unk. 
+					}
+					@table.Head() {
+						p50 
+					}
+					@table.Head() {
+						p95 
+					}
+					@table.Head() {
+						Max 
+					}
 				}
 			}
 			@table.Body() {
 				for _, cs := range sortedChecks(s) {
 					@table.Row() {
-						@table.Cell() { { cs.Expected } }
-						@table.Cell() { { string(cs.Category) } }
-						@table.Cell() { { cs.CheckName } }
-						@table.Cell() { { cs.Target } }
-						@table.Cell() { { fmt.Sprintf("%d", cs.Total) } }
-						@table.Cell() { { fmt.Sprintf("%d", cs.Passed) } }
-						@table.Cell() { { fmt.Sprintf("%d", cs.Warned) } }
-						@table.Cell() { { fmt.Sprintf("%d", cs.Failed) } }
-						@table.Cell() { { formatDur(cs.LatencyP50) } }
-						@table.Cell() { { formatDur(cs.LatencyP95) } }
-						@table.Cell() { { formatDur(cs.MaxLatency) } }
+						@table.Cell() {
+							{ expectedText(cs.Expected) }
+						}
+						@table.Cell() {
+							{ string(cs.Category) }
+						}
+						@table.Cell() {
+							<strong>{ cs.CheckName }</strong>
+						}
+						@table.Cell() {
+							<span class="data-value">{ cs.Target }</span>
+						}
+						@table.Cell() {
+							{ fmt.Sprintf("%d", cs.Total) }
+						}
+						@table.Cell() {
+							{ fmt.Sprintf("%d", cs.Passed) }
+						}
+						@table.Cell() {
+							{ fmt.Sprintf("%d", cs.Warned) }
+						}
+						@table.Cell() {
+							{ fmt.Sprintf("%d", cs.Failed) }
+						}
+						@table.Cell() {
+							{ fmt.Sprintf("%d", cs.Unknown) }
+						}
+						@table.Cell() {
+							{ formatDur(cs.LatencyP50) }
+						}
+						@table.Cell() {
+							{ formatDur(cs.LatencyP95) }
+						}
+						@table.Cell() {
+							{ formatDur(cs.MaxLatency) }
+						}
 					}
 				}
 			}
 		}
-	</div>
 	</div>
 }
 
@@ -64,6 +112,9 @@ func sortedChecks(s *report.Summary) []*report.CheckSummary {
 		out = append(out, cs)
 	}
 	sort.Slice(out, func(i, j int) bool {
+		if out[i].Failed+out[i].Warned != out[j].Failed+out[j].Warned {
+			return out[i].Failed+out[i].Warned > out[j].Failed+out[j].Warned
+		}
 		if out[i].Category != out[j].Category {
 			return out[i].Category < out[j].Category
 		}
@@ -75,9 +126,36 @@ func sortedChecks(s *report.Summary) []*report.CheckSummary {
 	return out
 }
 
+func summaryTotals(s *report.Summary, pick func(*report.CheckSummary) int) int {
+	if s == nil {
+		return 0
+	}
+	total := 0
+	for _, cs := range s.Checks {
+		total += pick(cs)
+	}
+	return total
+}
+
+func summaryTotal(s *report.Summary) int {
+	return summaryTotals(s, func(c *report.CheckSummary) int { return c.Total })
+}
+func summaryPassed(s *report.Summary) int {
+	return summaryTotals(s, func(c *report.CheckSummary) int { return c.Passed })
+}
+func summaryWarned(s *report.Summary) int {
+	return summaryTotals(s, func(c *report.CheckSummary) int { return c.Warned })
+}
+func summaryFailed(s *report.Summary) int {
+	return summaryTotals(s, func(c *report.CheckSummary) int { return c.Failed })
+}
+func summaryUnknown(s *report.Summary) int {
+	return summaryTotals(s, func(c *report.CheckSummary) int { return c.Unknown })
+}
+
 func formatDur(d time.Duration) string {
 	if d == 0 {
-		return "-"
+		return "—"
 	}
 	return d.Round(time.Microsecond).String()
 }

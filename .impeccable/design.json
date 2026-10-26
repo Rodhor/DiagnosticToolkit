@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-26T06:25:47Z",
+  "title": "Design System: DiagnosticToolkit",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Technical Blue", "canonical": "#17679b", "tonalRamp": ["#000635", "#002251", "#003e6f", "#005a8d", "#2c78ad", "#4d96cd", "#6cb6ef", "#acf8ff"] },
+      "primary-deep": { "role": "primary", "displayName": "Deep Technical Blue", "canonical": "#104f79", "tonalRamp": ["#00082e", "#00234a", "#003e67", "#1e5a85", "#3d77a4", "#5b95c4", "#7ab5e5", "#b9f6ff"] },
+      "primary-wash": { "role": "primary", "displayName": "Blue Wash", "canonical": "#e3eff6", "tonalRamp": ["#050c11", "#1a2328", "#333c42", "#4d575d", "#697379", "#869197", "#a5b0b7", "#e5f1f8"] },
+      "background": { "role": "neutral", "displayName": "Drafting Background", "canonical": "#eef2f5", "tonalRamp": ["#090c0d", "#1f2224", "#383b3d", "#525658", "#6f7275", "#8c9092", "#abaeb1", "#ebeff2"] },
+      "foreground": { "role": "neutral", "displayName": "Ink", "canonical": "#172536", "tonalRamp": ["#020b1a", "#152233", "#2d3c4e", "#47576a", "#637388", "#8091a6", "#9eb0c6", "#def1ff"] },
+      "surface": { "role": "neutral", "displayName": "White Surface", "canonical": "#ffffff", "tonalRamp": ["#0b0b0b", "#222222", "#3a3a3a", "#555555", "#717171", "#8f8f8f", "#aeaeae", "#eeeeee"] },
+      "sidebar": { "role": "neutral", "displayName": "Graphite Rail", "canonical": "#1b2637", "tonalRamp": ["#030b1a", "#172233", "#2f3b4d", "#495669", "#657287", "#8290a5", "#a1afc5", "#e0f0ff"] },
+      "sidebar-text": { "role": "neutral", "displayName": "Pale Rail Text", "canonical": "#dce5ec", "tonalRamp": ["#060c10", "#1c2328", "#343c41", "#4f565c", "#6b7379", "#889097", "#a7afb6", "#e7f0f7"] },
+      "warning": { "role": "tertiary", "displayName": "Warning Amber", "canonical": "#9a6208", "tonalRamp": ["#250000", "#410e00", "#5f2b00", "#7d4700", "#9c640c", "#bc8136", "#dda057", "#ffe197"] },
+      "warning-wash": { "role": "tertiary", "displayName": "Amber Wash", "canonical": "#fff1d1", "tonalRamp": ["#130900", "#2b2005", "#44391e", "#605438", "#7d7054", "#9b8e71", "#baad8e", "#fbedcd"] },
+      "success": { "role": "secondary", "displayName": "Success Green", "canonical": "#216647", "tonalRamp": ["#001401", "#002d12", "#00482b", "#1e6445", "#3e8160", "#5da07d", "#7cbf9c", "#bcffdb"] },
+      "success-wash": { "role": "secondary", "displayName": "Green Wash", "canonical": "#e2f2e9", "tonalRamp": ["#040e08", "#19251e", "#313e37", "#4c5952", "#67766e", "#85938b", "#a3b2aa", "#e3f3ea"] },
+      "failure": { "role": "tertiary", "displayName": "Failure Red", "canonical": "#a8322c", "tonalRamp": ["#350000", "#560000", "#770000", "#99221f", "#bb443c", "#de6459", "#ff8377", "#ffc4b5"] },
+      "failure-wash": { "role": "tertiary", "displayName": "Red Wash", "canonical": "#fae8e5", "tonalRamp": ["#130807", "#2b1e1c", "#453735", "#60514f", "#7d6d6b", "#9b8b88", "#baa9a7", "#fceae7"] },
+      "border": { "role": "neutral", "displayName": "Rule Gray", "canonical": "#cbd5de", "tonalRamp": ["#060c12", "#1b2329", "#343c43", "#4e565e", "#6a737b", "#879099", "#a6afb8", "#e6f0f9"] },
+      "muted": { "role": "neutral", "displayName": "Muted Slate", "canonical": "#526779", "tonalRamp": ["#000c1a", "#112333", "#293d4d", "#435869", "#5f7487", "#7c92a5", "#9ab1c5", "#daf2ff"] }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Page headline", "purpose": "Responsive page titles." },
+      "title": { "displayName": "Section title", "purpose": "Section headings and prominent idle-state text." },
+      "body": { "displayName": "System UI body", "purpose": "Explanatory copy and general interface text." },
+      "label": { "displayName": "Compact label", "purpose": "Section labels and compact table headings." },
+      "data": { "displayName": "Network data mono", "purpose": "Addresses, targets, run references, and measurements." }
+    },
+    "shadows": [
+      { "name": "control-xs", "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)", "purpose": "Subtle shadow on templui action buttons; panels remain flat." }
+    ],
+    "motion": [
+      { "name": "button-transition", "value": "transition-all (templui default)", "purpose": "Variant changes on action-button hover/focus." },
+      { "name": "monitoring-pulse", "value": "1.8s ease-out infinite", "purpose": "Soft halo on the live monitoring indicator." },
+      { "name": "result-refresh", "value": "every 2s", "purpose": "HTMX polling cadence for live result tables." }
+    ],
+    "breakpoints": [
+      { "name": "tablet", "value": "1000px" },
+      { "name": "mobile", "value": "760px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default templui action used for starting monitoring and saving settings.",
+      "html": "<button class=\"ds-button-primary\" type=\"button\">Start monitoring</button>",
+      "css": ".ds-button-primary { min-height: 36px; padding: 8px 16px; border: 0; border-radius: 5px; background: #17679b; color: #fff; font: 500 14px/1.25 system-ui, sans-serif; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); cursor: pointer; transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-button-primary:hover { background: color-mix(in srgb, #17679b 90%, transparent); } .ds-button-primary:focus-visible { outline: 3px solid #17679b80; outline-offset: 2px; } .ds-button-primary:active { background: #104f79; } .ds-button-primary:disabled { opacity: .5; pointer-events: none; }"
+    },
+    {
+      "name": "Outline action button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary Run once action against the page background.",
+      "html": "<button class=\"ds-button-outline\" type=\"button\">Run once</button>",
+      "css": ".ds-button-outline { min-height: 36px; padding: 8px 16px; border: 1px solid #cbd5de; border-radius: 5px; background: #eef2f5; color: #172536; font: 500 14px/1.25 system-ui, sans-serif; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); cursor: pointer; transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-button-outline:hover { background: #e7edf2; color: #25384a; } .ds-button-outline:focus-visible { outline: 3px solid #17679b80; outline-offset: 2px; } .ds-button-outline:active { background: #e3eff6; }"
+    },
+    {
+      "name": "Stop action button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Destructive templui variant used to stop monitoring.",
+      "html": "<button class=\"ds-button-stop\" type=\"button\">Stop monitoring</button>",
+      "css": ".ds-button-stop { min-height: 36px; padding: 8px 16px; border: 0; border-radius: 5px; background: #a8322c; color: #fff; font: 500 14px/1.25 system-ui, sans-serif; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); cursor: pointer; transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-button-stop:hover { background: color-mix(in srgb, #a8322c 90%, transparent); } .ds-button-stop:focus-visible { outline: 3px solid #a8322c80; outline-offset: 2px; } .ds-button-stop:active { background: #812a25; }"
+    },
+    {
+      "name": "Sidebar navigation",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Desktop rail links with a filled current-page state; mobile becomes a horizontal row.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Main navigation\"><a class=\"ds-nav-link ds-nav-link-active\" href=\"#\" aria-current=\"page\">Overview<span aria-hidden=\"true\">●</span></a><a class=\"ds-nav-link\" href=\"#\">Environment</a></nav>",
+      "css": ".ds-nav { display: grid; gap: 4px; width: 232px; padding: 12px; background: #1b2637; font: 400 13px/1.3 system-ui, sans-serif; } .ds-nav-link { min-height: 40px; padding: 0 11px; display: flex; align-items: center; justify-content: space-between; border-radius: 4px; color: #bdc9d4; text-decoration: none; } .ds-nav-link:hover { color: #fff; background: #27374b; } .ds-nav-link-active { color: #fff; background: #30445c; } .ds-nav-link:focus-visible { outline: 3px solid #f0a438; outline-offset: 2px; } @media (max-width: 760px) { .ds-nav { display: flex; width: auto; overflow-x: auto; } .ds-nav-link { flex: none; min-height: 36px; padding: 0 8px; } }"
+    },
+    {
+      "name": "Settings input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "White settings field with an adjacent visible label and helper text in the page implementation.",
+      "html": "<label class=\"ds-field\">Check timeout<input class=\"ds-input\" value=\"3s\"></label>",
+      "css": ".ds-field { display: grid; gap: 5px; color: #253b4f; font: 650 12px/1.4 system-ui, sans-serif; } .ds-input { width: 100%; min-width: 0; height: 36px; padding: 0 9px; border: 1px solid #bcc9d3; border-radius: 4px; background: #fff; color: #172536; font: 400 12px/1.4 system-ui, sans-serif; } .ds-input:focus { border-color: #17679b; outline: 2px solid #17679b30; } .ds-input:disabled { background: #eef2f5; color: #526779; cursor: not-allowed; }"
+    },
+    {
+      "name": "Run status chips",
+      "kind": "chip",
+      "refersTo": "status-pass",
+      "description": "Outcome labels keep explicit text in addition to color; the sample shows a passing result.",
+      "html": "<span class=\"ds-status ds-status-pass\">PASS</span> <span class=\"ds-status ds-status-warn\">WARN</span> <span class=\"ds-status ds-status-fail\">FAIL</span>",
+      "css": ".ds-status { display: inline-flex; align-items: center; padding: 3px 7px; border: 1px solid transparent; border-radius: 3px; font: 750 9px/1.25 system-ui, sans-serif; letter-spacing: .04em; white-space: nowrap; } .ds-status-pass { color: #216647; background: #e2f2e9; border-color: #bddbc8; } .ds-status-warn { color: #875704; background: #fff1d1; border-color: #ead39a; } .ds-status-fail { color: #a8322c; background: #fae8e5; border-color: #e7bfbb; } .ds-status-unknown { color: #465c6f; background: #edf1f4; border-color: #cbd5de; }"
+    },
+    {
+      "name": "Network path diagram",
+      "kind": "custom",
+      "refersTo": "topology-node",
+      "description": "Relationship-only host-to-gateway path with factual labels and a responsive vertical arrangement.",
+      "html": "<div class=\"ds-path\"><div class=\"ds-node\"><span>THIS HOST</span><strong>Discovered host</strong><small>N interfaces discovered</small></div><div class=\"ds-connector\" aria-hidden=\"true\"><span>via discovered interface</span><i></i>›</div><div class=\"ds-node ds-node-primary\"><span>DEFAULT GATEWAY</span><strong>Discovered gateway</strong><small>reported by the operating system</small></div></div>",
+      "css": ".ds-path { display: grid; grid-template-columns: minmax(160px,1fr) minmax(110px,.6fr) minmax(190px,1fr); align-items: center; gap: 14px; } .ds-node { min-height: 104px; padding: 16px; border: 1px solid #b9c9d5; border-radius: 4px; background: #fff; display: flex; flex-direction: column; justify-content: center; gap: 5px; } .ds-node-primary { border-color: #8ab2cc; background: #eef6fa; } .ds-node span { color: #526779; font: 750 9px/1.2 system-ui, sans-serif; letter-spacing: .1em; } .ds-node strong { color: #1b344b; font: 600 16px/1.3 system-ui, sans-serif; overflow-wrap: anywhere; } .ds-node small { color: #526779; font: 400 11px/1.4 system-ui, sans-serif; } .ds-connector { display: grid; gap: 9px; text-align: center; color: #526779; font: 400 10px/1.3 system-ui, sans-serif; } .ds-connector i { height: 2px; background: #5389a9; } @media (max-width: 760px) { .ds-path { grid-template-columns: minmax(0,1fr); } .ds-connector { justify-items: center; } .ds-connector i { width: 2px; height: 20px; } }"
+    },
+    {
+      "name": "Results table",
+      "kind": "custom",
+      "refersTo": "data-table",
+      "description": "Dense aligned observations with uppercase headings, dividers, and monospace values.",
+      "html": "<div class=\"ds-table-scroll\"><table class=\"ds-table\"><thead><tr><th>Status</th><th>Target</th><th>Expected</th><th>Latency</th></tr></thead><tbody><tr><td><span class=\"ds-status ds-status-pass\">PASS</span></td><td><code>Target address</code></td><td>Configured expectation</td><td><code>Measured latency</code></td></tr></tbody></table></div>",
+      "css": ".ds-table-scroll { max-width: 100%; overflow: auto; } .ds-table { width: 100%; border-collapse: collapse; color: #314659; background: #fff; font: 400 12px/1.4 system-ui, sans-serif; } .ds-table thead { background: #e6edf2; } .ds-table th { color: #425a6f; text-align: left; white-space: nowrap; font: 700 10px/1.3 system-ui, sans-serif; letter-spacing: .065em; text-transform: uppercase; } .ds-table th, .ds-table td { padding: 10px 11px; border-bottom: 1px solid #dce4ea; vertical-align: middle; } .ds-table tbody tr:hover { background: #f4f8fa; } .ds-table code { color: #163f5b; font: 400 11px/1.3 SFMono-Regular, Consolas, monospace; white-space: nowrap; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Technical reference diagrams",
+    "overview": "DiagnosticToolkit uses the visual language of a technical reference: cool drafting-white and graphite surfaces, blue rules and links, and compact, aligned data. Its interface is a working instrument for a local operator, not a decorative analytics dashboard. System UI typography keeps labels and explanations familiar; monospace is reserved for addresses and measured values.\n\nThe signature is a relationship-only host-to-gateway path built from discovered environment data. Results keep the configured expectation beside the observed status and latency. Monitoring state is explicit, and previous runs remain labeled as history rather than being presented as current results.",
+    "keyCharacteristics": [
+      "Cool light surfaces with a graphite navigation rail and technical blue structure.",
+      "Crisp borders, compact tables, and tabular-looking monospace network values.",
+      "A labeled topology path that reports host relationships, not geographic scale.",
+      "Amber warnings and red failures paired with readable status text."
+    ],
+    "rules": [
+      { "name": "The Evidence Color Rule", "body": "Status colors reinforce explicit words such as PASS, WARN, and FAIL; color is not the only status cue.", "section": "colors" }
+    ],
+    "dos": [
+      "Do use the discovered host, gateway, and route relationship for the topology diagram; retain its labels and directional connector.",
+      "Do keep expected outcomes visible beside observed result status and latency.",
+      "Do distinguish the current monitoring state from prior runs and label missing host data as unavailable.",
+      "Do keep wide tables scrollable and allow long network values to wrap where the layout permits."
+    ],
+    "donts": [
+      "Don't imply geographic scale or add network nodes that were not discovered.",
+      "Don't communicate a result state with color alone.",
+      "Don't present previous run results as the current run when monitoring is idle."
+    ]
+  }
+}

@@ -1,0 +1,53 @@
+package layouts
+
+templ AppShell(title, active string, content templ.Component) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<link rel="stylesheet" href="/assets/css/output.css"/>
+			<script src="/static/htmx.min.js"></script>
+			<script src="/static/app.js" defer></script>
+			<title>{ title } · DiagnosticToolkit</title>
+		</head>
+		<body class="app-body">
+			<div class="app-shell">
+				<aside class="sidebar" aria-label="Main navigation">
+					<a class="brand" href="/">
+						<span class="brand-mark" aria-hidden="true">DT</span>
+						<span><strong>DiagnosticToolkit</strong><small>Network diagnostics</small></span>
+					</a>
+					<nav class="nav-list">
+						@navLink("/", "Overview", active == "overview")
+						@navLink("/environment", "Environment", active == "environment")
+						@navLink("/logs", "Live logs", active == "logs")
+						@navLink("/history", "Run history", active == "history")
+						@navLink("/settings", "Settings", active == "settings")
+					</nav>
+					<div class="sidebar-foot">
+						<span class="local-indicator"></span>
+						<span>Local session</span>
+					</div>
+				</aside>
+				<div class="main-column">
+					<header class="topbar">
+						<div class="topbar-title">Network diagnostics <span>/</span> { title }</div>
+						<div class="topbar-note">Runs on this device</div>
+					</header>
+					<main class="page-content">
+						@content
+					</main>
+				</div>
+			</div>
+		</body>
+	</html>
+}
+
+templ navLink(href, label string, active bool) {
+	if active {
+		<a class="nav-link nav-link-active" href={ templ.SafeURL(href) } aria-current="page"><span>{ label }</span><span class="nav-marker" aria-hidden="true"></span></a>
+	} else {
+		<a class="nav-link" href={ templ.SafeURL(href) }><span>{ label }</span></a>
+	}
+}

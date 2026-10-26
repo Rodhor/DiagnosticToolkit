@@ -1,0 +1,125 @@
+package pages
+
+import (
+	"fmt"
+
+	"github.com/templui/templui/components/badge"
+	"github.com/templui/templui/components/table"
+
+	"github.com/rodhor/DiagnosticToolset/internal/web/server"
+	"github.com/rodhor/DiagnosticToolset/web/templates/layouts"
+)
+
+templ History(runs []*server.Run) {
+	@layouts.AppShell("Run history", "history", historyContent(runs))
+}
+
+templ historyContent(runs []*server.Run) {
+	<div class="page-heading"><h1>Run history</h1><p>Completed snapshots and monitoring sessions stay available for review during this server session.</p></div>
+	<section class="section-block">
+		if len(runs) == 0 {
+			<div class="empty-state"><strong>No completed runs</strong><span>Start monitoring or run a one-time snapshot from Overview.</span><a class="text-link" href="/">Go to Overview</a></div>
+		} else {
+			<div class="history-mobile-list">
+				for _, run := range runs {
+					<article class="history-entry">
+						<div class="history-entry-head"><strong>Run { fmt.Sprintf("%d", run.ID) }</strong>@runState(run)</div>
+						<div class="history-entry-meta"><span>{ run.Mode }</span><time>{ run.Started.Format("Jan 02, 2006 · 15:04:05") }</time></div>
+						<div class="history-entry-meta"><span>{ fmt.Sprintf("%d observations", runObs(run)) }</span><span>{ runDuration(run) }</span></div>
+						<div class="row-links"><a href={ templ.SafeURL(fmt.Sprintf("/logs?run=%d", run.ID)) }>Logs</a><a href={ templ.SafeURL(fmt.Sprintf("/summary?run=%d", run.ID)) }>Summary</a></div>
+					</article>
+				}
+			</div>
+			<div class="history-desktop table-scroll">
+				@table.Table(table.Props{Class: "results-table history-table"}) {
+					@table.Header() {
+						@table.Row() {
+							@table.Head() {
+								Run 
+							}
+							@table.Head() {
+								Type 
+							}
+							@table.Head() {
+								Started 
+							}
+							@table.Head() {
+								Duration 
+							}
+							@table.Head() {
+								Observations 
+							}
+							@table.Head() {
+								Outcome 
+							}
+							@table.Head() {
+								Review 
+							}
+						}
+					}
+					@table.Body() {
+						for _, run := range runs {
+							@table.Row() {
+								@table.Cell() {
+									<strong>Run { fmt.Sprintf("%d", run.ID) }</strong>
+								}
+								@table.Cell() {
+									{ run.Mode }
+								}
+								@table.Cell() {
+									<time>{ run.Started.Format("Jan 02, 2006 · 15:04:05") }</time>
+								}
+								@table.Cell() {
+									{ runDuration(run) }
+								}
+								@table.Cell() {
+									{ fmt.Sprintf("%d", runObs(run)) }
+								}
+								@table.Cell() {
+									@runState(run)
+								}
+								@table.Cell() {
+									<div class="row-links"><a href={ templ.SafeURL(fmt.Sprintf("/logs?run=%d", run.ID)) }>Logs</a><a href={ templ.SafeURL(fmt.Sprintf("/summary?run=%d", run.ID)) }>Summary</a></div>
+								}
+							}
+						}
+					}
+				}
+			</div>
+		}
+	</section>
+}
+
+templ runOutcomeBadge(run *server.Run) {
+	if runHasFailure(run) {
+		@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+			Issues 
+		}
+	} else if runHasWarning(run) {
+		@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+			Warnings 
+		}
+	} else if runHasUnknown(run) {
+		@badge.Badge(badge.Props{Variant: badge.VariantOutline}) {
+			Inconclusive 
+		}
+	} else {
+		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+			Passed 
+		}
+	}
+}
+
+templ runState(run *server.Run) {
+	if run.Running {
+		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+			RUNNING 
+		}
+	} else if runObs(run) == 0 {
+		@badge.Badge(badge.Props{Variant: badge.VariantOutline}) {
+			NO RESULTS 
+		}
+	} else {
+		@runOutcomeBadge(run)
+	}
+}

@@ -1,32 +1,34 @@
 package pages
 
 import (
-	"github.com/templui/templui/components/card"
+	"fmt"
 
 	"github.com/rodhor/DiagnosticToolset/internal/report"
 	"github.com/rodhor/DiagnosticToolset/web/templates/components"
+	"github.com/rodhor/DiagnosticToolset/web/templates/layouts"
 )
 
-templ Summary(sum *report.Summary) {
-	<!DOCTYPE html>
-	<html class="dark">
-	<head>
-		<link rel="stylesheet" href="/assets/css/output.css">
-		<title>Summary</title>
-	</head>
-	<body class="p-6 space-y-4">
-		@card.Card() {
-			@card.Header() {
-				@card.Title() { Run Summary }
-				@card.Description() { Aggregated results for the selected run }
-			}
-			@card.Content() {
-				@components.Summary(sum)
-			}
+templ Summary(sum *report.Summary, runID int, running bool) {
+	@layouts.AppShell("Run summary", "history", summaryContent(sum, runID, running))
+}
+
+templ summaryContent(sum *report.Summary, runID int, running bool) {
+	<div class="page-heading page-heading-row">
+		<div><h1>Run summary</h1><p>Aggregated observations, outcomes, and latency for this run.</p></div>
+		if runID > 0 {
+			<span class="run-reference">Run { fmt.Sprintf("%d", runID) }</span>
 		}
-		<div class="flex gap-4">
-			<a href="/" class="underline">Back to dashboard</a>
-		</div>
-	</body>
-	</html>
+	</div>
+	<section class="section-block">
+		if sum == nil {
+			if running {
+				<div class="empty-state"><strong>Run is still active</strong><span>Stop monitoring to finalize its summary.</span><a class="text-link" href="/">Return to Overview</a></div>
+			} else {
+				<div class="empty-state"><strong>No summary available</strong><span>Run monitoring or a one-time snapshot to create a summary.</span><a class="text-link" href="/">Go to Overview</a></div>
+			}
+		} else {
+			@components.Summary(sum)
+		}
+	</section>
+	<a class="text-link back-link" href="/history">Back to run history</a>
 }

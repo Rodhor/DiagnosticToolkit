@@ -13,13 +13,18 @@ import (
 
 func Dashboard(s *server.Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		runs := s.State().Runs()
-		// newest first
-		rev := make([]*server.Run, len(runs))
-		for i, r := range runs {
-			rev[len(runs)-1-i] = r
+		snapshot, err := s.State().App().Environment()
+		snapshotErr := ""
+		if err != nil {
+			snapshotErr = err.Error()
 		}
-		templ.Handler(pages.Dashboard(s.State().IsRunning(), rev)).ServeHTTP(w, r)
+		templ.Handler(pages.Dashboard(s.State().IsRunning(), newestFirst(s.State().Runs()), snapshot, snapshotErr)).ServeHTTP(w, r)
+	}
+}
+
+func History(s *server.Server) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		templ.Handler(pages.History(newestFirst(s.State().Runs()))).ServeHTTP(w, r)
 	}
 }
 
@@ -35,10 +40,15 @@ func Logs(s *server.Server) http.HandlerFunc {
 
 func Settings(s *server.Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cfg, _ := app.Load(s.State().ConfigPath())
+		cfg, err := app.Load(s.State().ConfigPath())
+		loadError := ""
+		if err != nil {
+			loadError = err.Error()
+			cfg = app.Default()
+		}
 		view := app.ConfigToView(cfg)
 		saved := r.URL.Query().Get("saved") == "1"
-		templ.Handler(pages.Settings(view, saved)).ServeHTTP(w, r)
+		templ.Handler(pages.Settings(view, saved, loadError, "")).ServeHTTP(w, r)
 	}
 }
 
@@ -60,17 +70,25 @@ func Summary(s *server.Server) http.HandlerFunc {
 			fmt.Sscanf(v, "%d", &runID)
 		}
 		var sum *report.Summary
+		var run *server.Run
 		if runID > 0 {
-			if r := s.State().RunByID(runID); r != nil {
-				sum = r.Summary
-			}
+			run = s.State().RunByID(runID)
 		} else {
-			sum = s.State().Summary()
+			runs := s.State().Runs()
+			if len(runs) > 0 {
+				run = runs[len(runs)-1]
+			}
 		}
-		if sum == nil {
-			http.Error(w, "no summary available; run monitoring first", http.StatusNotFound)
-			return
+		if run != nil && !run.Running {
+			sum = run.Summary
 		}
-		templ.Handler(pages.Summary(sum)).ServeHTTP(w, r)
+		templ.Handler(pages.Summary(sum, runID, run != nil && run.Running)).ServeHTTP(w, r)
 	}
+}
+
+func newestFirst(runs []*server.Run) []*server.Run {
+	for i, j := 0, len(runs)-1; i < j; i, j = i+1, j-1 {
+		runs[i], runs[j] = runs[j], runs[i]
+	}
+	return runs
 }

@@ -3,22 +3,123 @@ package pages
 import (
 	"fmt"
 
-	"github.com/templui/templui/components/card"
+	"github.com/rodhor/DiagnosticToolset/internal/platform"
+	"github.com/rodhor/DiagnosticToolset/web/templates/layouts"
 )
 
-templ Environment(snap any) {
-	<!DOCTYPE html>
-	<html class="dark">
-	<head><link rel="stylesheet" href="/assets/css/output.css"><title>Environment</title></head>
-	<body class="p-6">
-		@card.Card() {
-			@card.Header() {
-				@card.Title() { Environment }
-			}
-			@card.Content() {
-				<pre class="text-sm">{ fmt.Sprintf("%+v", snap) }</pre>
-			}
+templ Environment(snapshot platform.Snapshot) {
+	@layouts.AppShell("Environment", "environment", environmentContent(toEnvironmentView(snapshot)))
+}
+
+templ environmentContent(v environmentView) {
+	<div class="page-heading">
+		<h1>Environment</h1>
+		<p>Network details discovered from this host. Missing data is shown as unavailable, not inferred.</p>
+	</div>
+	<section class="section-block topology-section" aria-labelledby="path-title">
+		<div class="section-heading">
+			<div><h2 id="path-title">Default network path</h2><p>Host-to-gateway relationship discovered by the operating system.</p></div>
+			<span class="captured-at">Captured { v.Captured }</span>
+		</div>
+		<div class="path-flow">
+			<div class="path-node"><span>HOST</span><strong>{ valueOr(v.Hostname, "Unknown host") }</strong><small>{ fmt.Sprintf("%d interfaces", len(v.Interfaces)) }</small></div>
+			<div class="path-link"><span>{ valueOr(v.GatewayIf, "default route") }</span><div class="path-track"><i></i><svg class="path-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M1 1l5 3-5 3"></path></svg></div></div>
+			<div class="path-node path-node-primary"><span>DEFAULT GATEWAY</span><strong>{ v.Gateway }</strong><small>reported by the operating system</small></div>
+		</div>
+		if v.Gateway == "Not detected" {
+			<p class="inline-note">No default gateway was discovered. This can be expected on isolated or point-to-point networks.</p>
 		}
-	</body>
-	</html>
+	</section>
+	<section class="section-block" aria-labelledby="dns-title">
+		<div class="section-heading"><div><h2 id="dns-title">DNS configuration</h2><p>Host resolvers and upstream servers are reported separately.</p></div></div>
+		<div class="info-columns">
+			<div class="info-panel">
+				<h3>Host resolvers</h3>
+				if len(v.Resolvers) == 0 {
+					<p class="empty-inline">None discovered</p>
+				} else {
+					<ul class="value-list">
+						for _, addr := range v.Resolvers {
+							<li><code>{ addr }</code></li>
+						}
+					</ul>
+				}
+			</div>
+			<div class="info-panel">
+				<h3>Known upstream DNS</h3>
+				if len(v.UpstreamDNS) == 0 {
+					<p class="empty-inline">None discovered</p>
+				} else {
+					<ul class="value-list">
+						for _, addr := range v.UpstreamDNS {
+							<li><code>{ addr }</code></li>
+						}
+					</ul>
+				}
+			</div>
+			<div class="info-panel">
+				<h3>Search domains</h3>
+				if len(v.SearchDomains) == 0 {
+					<p class="empty-inline">None configured</p>
+				} else {
+					<ul class="value-list">
+						for _, domain := range v.SearchDomains {
+							<li><code>{ domain }</code></li>
+						}
+					</ul>
+				}
+			</div>
+		</div>
+	</section>
+	<section class="section-block" aria-labelledby="interfaces-title">
+		<div class="section-heading"><div><h2 id="interfaces-title">Network interfaces</h2><p>Addresses, link state, and available lease details.</p></div><span class="section-count">{ fmt.Sprintf("%d", len(v.Interfaces)) } interfaces</span></div>
+		if len(v.Interfaces) == 0 {
+			<div class="empty-state"><strong>No interfaces discovered</strong><span>Check host permissions and platform network discovery.</span></div>
+		} else {
+			<div class="table-scroll">
+				<table class="data-table">
+					<thead><tr><th>Interface</th><th>State</th><th>Addresses</th><th>MTU</th><th>MAC</th><th>Lease details</th></tr></thead>
+					<tbody>
+						for _, nic := range v.Interfaces {
+							<tr>
+								<td><strong>{ nic.Name }</strong></td>
+								<td><span class={ interfaceStateClass(nic.State) }>{ nic.State }</span></td>
+								<td class="address-cell">{ valueOr(nic.Addresses, "No addresses reported") }</td>
+								<td><code>{ fmt.Sprintf("%d", nic.MTU) }</code></td>
+								<td><code>{ valueOr(nic.MAC, "—") }</code></td>
+								<td>{ valueOr(nic.Lease, "Not available") }</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	</section>
+	if len(v.Warnings) > 0 {
+		<section class="section-block warning-section" aria-labelledby="warnings-title">
+			<div class="section-heading"><div><h2 id="warnings-title">Discovery notes</h2><p>Details the operating system did not expose.</p></div></div>
+			<ul class="warning-list">
+				for _, warning := range v.Warnings {
+					<li>{ warning }</li>
+				}
+			</ul>
+		</section>
+	}
+}
+
+func valueOr(value, fallback string) string {
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
+func interfaceStateClass(state string) string {
+	if state == "Up" {
+		return "state-chip state-up"
+	}
+	if state == "Loopback" {
+		return "state-chip state-neutral"
+	}
+	return "state-chip state-down"
 }

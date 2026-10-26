@@ -1,38 +1,32 @@
 package pages
 
 import (
-	"github.com/templui/templui/components/card"
+	"fmt"
+
+	"github.com/rodhor/DiagnosticToolset/web/templates/components"
+	"github.com/rodhor/DiagnosticToolset/web/templates/layouts"
 )
 
 templ Logs(runID int) {
-	<!DOCTYPE html>
-	<html class="dark">
-	<head>
-		<link rel="stylesheet" href="/assets/css/output.css">
-		<script src="https://unpkg.com/htmx.org@1.9.12"></script>
-		<title>Logs</title>
-	</head>
-	<body class="p-6">
-		@card.Card() {
-			@card.Header() {
-				@card.Title() { Logs }
-				@card.Description() { Recent check results (auto-refreshing) }
-			}
-			@card.Content() {
-				<div id="results">Loading...</div>
-			}
+	@layouts.AppShell("Logs", "logs", logsContent(runID))
+}
+
+templ logsContent(runID int) {
+	<div class="page-heading page-heading-row">
+		<div><h1>Run logs</h1><p>Observations in execution order, including expected outcomes and measured latency.</p></div>
+		if runID > 0 {
+			<span class="run-reference">Run { fmt.Sprintf("%d", runID) }</span>
 		}
-		<script>window.__runId = { runID };</script>
-		<script>
-			const runParam = (window.__runId > 0) ? ('?run=' + window.__runId) : '';
-			async function refreshResults() {
-				const r = await fetch('/partials/results' + runParam);
-				if (r.ok) document.getElementById('results').innerHTML = await r.text();
-			}
-			refreshResults();
-			setInterval(refreshResults, 2000);
-		</script>
-		<div class="mt-4"><a href="/" class="underline">Back to dashboard</a></div>
-	</body>
-	</html>
+	</div>
+	<section class="section-block">
+		<div class="section-heading"><div><h2>Check observations</h2><p>Live results refresh automatically while monitoring is active.</p></div></div>
+		@components.ResultsPoller(logsResultsURL(runID))
+	</section>
+}
+
+func logsResultsURL(runID int) string {
+	if runID > 0 {
+		return fmt.Sprintf("/partials/results?run=%d", runID)
+	}
+	return "/partials/results"
 }

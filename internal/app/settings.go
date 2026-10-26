@@ -3,9 +3,8 @@ package app
 import (
 	"fmt"
 	"os"
-	"path/filepath"
+	"strconv"
 	"strings"
-	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -22,17 +21,17 @@ type QueryView struct {
 
 type SettingsView struct {
 	Timeout       string
-	Concurrency   int
+	Concurrency   string
 	Interval      string
 	ThresholdTCP  string
 	ThresholdDNS  string
 	ThresholdPing string
 
-	PingCount      int
-	PingInterval   string
-	PingTimeout    string
-	PingWarnLoss   float64
-	PingFailLoss   float64
+	PingCount    string
+	PingInterval string
+	PingTimeout  string
+	PingWarnLoss string
+	PingFailLoss string
 
 	TCPTargets  []string
 	PingTargets []string
@@ -46,15 +45,15 @@ type SettingsView struct {
 func ConfigToView(cfg Config) SettingsView {
 	v := SettingsView{
 		Timeout:       cfg.Timeout.String(),
-		Concurrency:   cfg.Concurrency,
+		Concurrency:   strconv.Itoa(cfg.Concurrency),
 		Interval:      cfg.Interval.String(),
-		PingCount:     cfg.Ping.Count,
+		PingCount:     strconv.Itoa(cfg.Ping.Count),
 		PingInterval:  cfg.Ping.Interval.String(),
 		PingTimeout:   cfg.Ping.Timeout.String(),
-		PingWarnLoss:  cfg.Ping.WarnLoss,
-		PingFailLoss:  cfg.Ping.FailLoss,
-		TCPTargets:  cfg.TCPTargets,
-		PingTargets: cfg.PingTargets,
+		PingWarnLoss:  strconv.FormatFloat(cfg.Ping.WarnLoss, 'f', -1, 64),
+		PingFailLoss:  strconv.FormatFloat(cfg.Ping.FailLoss, 'f', -1, 64),
+		TCPTargets:    cfg.TCPTargets,
+		PingTargets:   cfg.PingTargets,
 		OutputResults: cfg.OutputPath,
 		OutputSummary: cfg.SummaryPath,
 	}
@@ -101,18 +100,22 @@ func ConfigToView(cfg Config) SettingsView {
 func ViewToConfig(v SettingsView, base Config) (Config, error) {
 	cfg := base
 
-	d, err := time.ParseDuration(v.Timeout)
+	d, err := parseDuration(v.Timeout, base.Timeout)
 	if err != nil {
 		return Config{}, fmt.Errorf("timeout: %w", err)
 	}
 	cfg.Timeout = d
 
-	if v.Concurrency < 0 {
+	concurrency, err := strconv.Atoi(strings.TrimSpace(v.Concurrency))
+	if err != nil {
+		return Config{}, fmt.Errorf("concurrency must be a whole number")
+	}
+	if concurrency < 0 {
 		return Config{}, fmt.Errorf("concurrency must be non-negative")
 	}
-	cfg.Concurrency = v.Concurrency
+	cfg.Concurrency = concurrency
 
-	d, err = time.ParseDuration(v.Interval)
+	d, err = parseDuration(v.Interval, base.Interval)
 	if err != nil {
 		return Config{}, fmt.Errorf("interval: %w", err)
 	}
@@ -121,21 +124,21 @@ func ViewToConfig(v SettingsView, base Config) (Config, error) {
 	// thresholds
 	th := domain.Thresholds{}
 	if v.ThresholdTCP != "" {
-		dd, err := time.ParseDuration(v.ThresholdTCP)
+		dd, err := parseDuration(v.ThresholdTCP, 0)
 		if err != nil {
 			return Config{}, fmt.Errorf("threshold tcp: %w", err)
 		}
 		th[domain.TCP] = dd
 	}
 	if v.ThresholdDNS != "" {
-		dd, err := time.ParseDuration(v.ThresholdDNS)
+		dd, err := parseDuration(v.ThresholdDNS, 0)
 		if err != nil {
 			return Config{}, fmt.Errorf("threshold dns: %w", err)
 		}
 		th[domain.DNS] = dd
 	}
 	if v.ThresholdPing != "" {
-		dd, err := time.ParseDuration(v.ThresholdPing)
+		dd, err := parseDuration(v.ThresholdPing, 0)
 		if err != nil {
 			return Config{}, fmt.Errorf("threshold ping: %w", err)
 		}
@@ -146,26 +149,33 @@ func ViewToConfig(v SettingsView, base Config) (Config, error) {
 	}
 
 	// ping
-	cfg.Ping.Count = v.PingCount
+	cfg.Ping.Count, err = strconv.Atoi(strings.TrimSpace(v.PingCount))
+	if err != nil {
+		return Config{}, fmt.Errorf("ping count must be a whole number")
+	}
 	if cfg.Ping.Count <= 0 {
-		cfg.Ping.Count = base.Ping.Count
+		return Config{}, fmt.Errorf("ping count must be greater than zero")
 	}
-	if v.PingInterval != "" {
-		dd, err := time.ParseDuration(v.PingInterval)
-		if err != nil {
-			return Config{}, fmt.Errorf("ping interval: %w", err)
-		}
-		cfg.Ping.Interval = dd
+	if cfg.Ping.Interval, err = parseDuration(v.PingInterval, base.Ping.Interval); err != nil {
+		return Config{}, fmt.Errorf("ping interval: %w", err)
 	}
-	if v.PingTimeout != "" {
-		dd, err := time.ParseDuration(v.PingTimeout)
-		if err != nil {
-			return Config{}, fmt.Errorf("ping timeout: %w", err)
-		}
-		cfg.Ping.Timeout = dd
+	if cfg.Ping.Timeout, err = parseDuration(v.PingTimeout, base.Ping.Timeout); err != nil {
+		return Config{}, fmt.Errorf("ping timeout: %w", err)
 	}
-	cfg.Ping.WarnLoss = v.PingWarnLoss
-	cfg.Ping.FailLoss = v.PingFailLoss
+	cfg.Ping.WarnLoss, err = strconv.ParseFloat(strings.TrimSpace(v.PingWarnLoss), 64)
+	if err != nil {
+		return Config{}, fmt.Errorf("ping warning loss must be a number")
+	}
+	cfg.Ping.FailLoss, err = strconv.ParseFloat(strings.TrimSpace(v.PingFailLoss), 64)
+	if err != nil {
+		return Config{}, fmt.Errorf("ping failure loss must be a number")
+	}
+	if cfg.Ping.WarnLoss < 0 || cfg.Ping.WarnLoss > 100 || cfg.Ping.FailLoss < 0 || cfg.Ping.FailLoss > 100 {
+		return Config{}, fmt.Errorf("ping loss thresholds must be between 0 and 100")
+	}
+	if cfg.Ping.FailLoss > 0 && cfg.Ping.WarnLoss > cfg.Ping.FailLoss {
+		return Config{}, fmt.Errorf("ping warning loss threshold must not exceed failure threshold")
+	}
 	cfg.Ping.Privileged = true
 
 	// targets
@@ -202,8 +212,11 @@ func ViewToConfig(v SettingsView, base Config) (Config, error) {
 			continue
 		}
 		outcome := check.ExpectedSuccess
-		if strings.EqualFold(strings.TrimSpace(qv.Expect), "NXDOMAIN") {
+		expect := strings.ToUpper(strings.TrimSpace(qv.Expect))
+		if expect == "NXDOMAIN" {
 			outcome = check.ExpectedNXDomain
+		} else if expect != "" && expect != "SUCCESS" {
+			return Config{}, fmt.Errorf("DNS query %q has unknown expected outcome %q", qv.Name, qv.Expect)
 		}
 		var expected []string
 		if outcome != check.ExpectedNXDomain {
@@ -213,6 +226,8 @@ func ViewToConfig(v SettingsView, base Config) (Config, error) {
 					expected = append(expected, a)
 				}
 			}
+		} else if strings.TrimSpace(qv.Expected) != "" {
+			return Config{}, fmt.Errorf("DNS query %q cannot have expected IPs with NXDOMAIN", qv.Name)
 		}
 		qs = append(qs, check.QuerySpec{
 			Name:              qv.Name,
@@ -269,8 +284,6 @@ func SaveConfig(path string, cfg Config) error {
 		os.Remove(tmp)
 		return err
 	}
-	// backup not needed here; handler does it
-	_ = filepath.Dir
 	return nil
 }
 
@@ -315,8 +328,8 @@ func toFileConfig(cfg Config) fileConfig {
 	}
 	// targets
 	fc.Targets = &targetsFile{
-		TCP:   cfg.TCPTargets,
-		Ping:  cfg.PingTargets,
+		TCP:  cfg.TCPTargets,
+		Ping: cfg.PingTargets,
 	}
 	resolvers := make([]resolverFile, 0, len(cfg.Resolvers))
 	for _, r := range cfg.Resolvers {

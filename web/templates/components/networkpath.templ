@@ -1,0 +1,31 @@
+package components
+
+import "github.com/rodhor/DiagnosticToolset/internal/platform"
+
+templ NetworkPath(snapshot platform.Snapshot) {
+	if snapshot.Gateway.IsValid() {
+		<div class="path-flow">
+			<div class="path-node"><span>THIS HOST</span><strong>{ networkHost(snapshot.Hostname) }</strong><small>{ interfaceCount(snapshot) } interfaces discovered</small></div>
+			<div class="path-link"><span>{ networkInterface(snapshot.GatewayIf) }</span><div class="path-track"><i></i><svg class="path-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M1 1l5 3-5 3"></path></svg></div></div>
+			<div class="path-node path-node-primary"><span>DEFAULT GATEWAY</span><strong>{ snapshot.Gateway.String() }</strong><small>reported by the operating system</small></div>
+		</div>
+	} else {
+		<div class="empty-inline">No default gateway was discovered for this host.</div>
+	}
+}
+
+func networkHost(host string) string {
+	if host == "" {
+		return "Unknown host"
+	}
+	return host
+}
+
+func networkInterface(name string) string {
+	if name == "" {
+		return "default route"
+	}
+	return "via " + name
+}
+
+func interfaceCount(snapshot platform.Snapshot) int { return len(snapshot.Interfaces) }
