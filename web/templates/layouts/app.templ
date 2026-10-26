@@ -7,6 +7,15 @@ templ AppShell(title, active string, content templ.Component) {
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<link rel="stylesheet" href="/assets/css/output.css"/>
+			<script>
+				(function () {
+					try {
+						const theme = localStorage.getItem("diagnostic-toolkit-theme");
+						const dark = theme === "dark" || (!theme);
+						if (dark) document.documentElement.classList.add("dark");
+					} catch (error) {}
+				})();
+			</script>
 			<script src="/static/htmx.min.js"></script>
 			<script src="/static/app.js" defer></script>
 			<title>{ title } · DiagnosticToolkit</title>
@@ -33,7 +42,17 @@ templ AppShell(title, active string, content templ.Component) {
 				<div class="main-column">
 					<header class="topbar">
 						<div class="topbar-title">Network diagnostics <span>/</span> { title }</div>
-						<div class="topbar-note">Runs on this device</div>
+						<div class="theme-toggle-wrap">
+							<button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle color theme" aria-pressed="false">
+								<span class="theme-toggle-icon theme-icon-sun" aria-hidden="true">
+									<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"></circle><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.1 3.1l1.1 1.1M11.8 11.8l1.1 1.1M3.1 12.9l1.1-1.1M11.8 4.2l1.1-1.1"></path></svg>
+								</span>
+								<span class="theme-toggle-icon theme-icon-moon" aria-hidden="true">
+									<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7Z"></path></svg>
+								</span>
+							</button>
+							<span class="topbar-note">Runs on this device</span>
+						</div>
 					</header>
 					<main class="page-content">
 						@content

@@ -29,14 +29,14 @@ func AppShell(title, active string, content templ.Component) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><link rel=\"stylesheet\" href=\"/assets/css/output.css\"><script src=\"/static/htmx.min.js\"></script><script src=\"/static/app.js\" defer></script><title>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><link rel=\"stylesheet\" href=\"/assets/css/output.css\"><script>\n\t\t\t\t(function () {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tconst theme = localStorage.getItem(\"diagnostic-toolkit-theme\");\n\t\t\t\t\t\tconst dark = theme === \"dark\" || (!theme);\n\t\t\t\t\t\tif (dark) document.documentElement.classList.add(\"dark\");\n\t\t\t\t\t} catch (error) {}\n\t\t\t\t})();\n\t\t\t</script><script src=\"/static/htmx.min.js\"></script><script src=\"/static/app.js\" defer></script><title>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/app.templ`, Line: 12, Col: 17}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/app.templ`, Line: 21, Col: 17}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -73,13 +73,13 @@ func AppShell(title, active string, content templ.Component) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/app.templ`, Line: 35, Col: 74}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/app.templ`, Line: 44, Col: 74}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div class=\"topbar-note\">Runs on this device</div></header><main class=\"page-content\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div class=\"theme-toggle-wrap\"><button type=\"button\" class=\"theme-toggle\" id=\"theme-toggle\" aria-label=\"Toggle color theme\" aria-pressed=\"false\"><span class=\"theme-toggle-icon theme-icon-sun\" aria-hidden=\"true\"><svg viewBox=\"0 0 16 16\" width=\"15\" height=\"15\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"><circle cx=\"8\" cy=\"8\" r=\"3\"></circle><path d=\"M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.1 3.1l1.1 1.1M11.8 11.8l1.1 1.1M3.1 12.9l1.1-1.1M11.8 4.2l1.1-1.1\"></path></svg></span> <span class=\"theme-toggle-icon theme-icon-moon\" aria-hidden=\"true\"><svg viewBox=\"0 0 16 16\" width=\"15\" height=\"15\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7Z\"></path></svg></span></button> <span class=\"topbar-note\">Runs on this device</span></div></header><main class=\"page-content\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -124,7 +124,7 @@ func navLink(href, label string, active bool) templ.Component {
 			var templ_7745c5c3_Var5 templ.SafeURL
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(href))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/app.templ`, Line: 49, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/app.templ`, Line: 68, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -137,7 +137,7 @@ func navLink(href, label string, active bool) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/app.templ`, Line: 49, Col: 100}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/app.templ`, Line: 68, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -155,7 +155,7 @@ func navLink(href, label string, active bool) templ.Component {
 			var templ_7745c5c3_Var7 templ.SafeURL
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(href))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/app.templ`, Line: 51, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/app.templ`, Line: 70, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -168,7 +168,7 @@ func navLink(href, label string, active bool) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/app.templ`, Line: 51, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/layouts/app.templ`, Line: 70, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
